@@ -1,13 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/cron/refresh-news",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-matches",
-      "schedule": "*/10 * * * *"
-    }
+  "_comment_crons": "Les crons sont désactivés sur le plan Hobby (1/jour max). Les pages se rafraîchissent via ISR (revalidate=300s pour /classement, 900s pour /news, 120s pour /stats). Réactive ces crons si tu passes en plan Pro.",
+  "_disabled_crons": [
+    { "path": "/api/cron/refresh-news", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/refresh-matches", "schedule": "*/10 * * * *" }
   ]
 }
