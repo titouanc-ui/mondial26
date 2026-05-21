@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, X, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
   { href: "/news", label: "News" },
@@ -17,6 +18,19 @@ const NAV_LINKS = [
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const supabase = getSupabaseBrowser();
+    supabase.auth.getUser().then(({ data }) => {
+      setAuthed(!!data.user);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      setAuthed(!!session?.user);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur-xl">
@@ -57,6 +71,19 @@ export function Header() {
               </Link>
             );
           })}
+          {authed && (
+            <Link
+              href="/profil"
+              className={cn(
+                "ml-1 inline-flex items-center gap-1.5 rounded-md border border-border bg-bg-card/60 px-3 py-2 text-sm font-medium transition-colors hover:bg-bg-card-hover",
+                pathname.startsWith("/profil") && "border-accent-blue/50 text-text",
+              )}
+              aria-label="Mon profil"
+            >
+              <User className="h-4 w-4" />
+              <span>Profil</span>
+            </Link>
+          )}
         </nav>
 
         <button
@@ -92,6 +119,20 @@ export function Header() {
                 </Link>
               );
             })}
+            {authed && (
+              <Link
+                href="/profil"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  pathname.startsWith("/profil")
+                    ? "bg-bg-elevated text-text"
+                    : "text-text-muted hover:text-text hover:bg-bg-elevated",
+                )}
+              >
+                <User className="h-4 w-4" /> Mon profil
+              </Link>
+            )}
           </div>
         </nav>
       )}

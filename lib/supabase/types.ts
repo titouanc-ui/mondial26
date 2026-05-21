@@ -29,6 +29,10 @@ export interface Profile {
   user_id: string | null;
   is_verified: boolean;
   points_total: number;
+  coins: number;
+  avatar_url: string | null;
+  favorite_team: string | null;
+  bio: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,11 +67,19 @@ export interface Database {
           pseudo: string;
           user_id?: string | null;
           points_total?: number;
+          coins?: number;
+          avatar_url?: string | null;
+          favorite_team?: string | null;
+          bio?: string | null;
         };
         Update: Partial<{
           pseudo: string;
           user_id: string | null;
           points_total: number;
+          coins: number;
+          avatar_url: string | null;
+          favorite_team: string | null;
+          bio: string | null;
         }>;
         Relationships: [];
       };
