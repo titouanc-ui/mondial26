@@ -10,6 +10,8 @@ import { GoogleSignInButton } from "@/components/auth/google-button";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { PlayerAchievementBadges } from "@/components/achievements/player-achievement-badges";
+import { AdminGrantButton } from "@/components/profile/admin-grant-button";
+import { isAdminEmail } from "@/lib/admin";
 import { TEAMS } from "@/lib/teams";
 import { getBanner } from "@/lib/shop/catalog";
 import type { Profile } from "@/lib/supabase/types";
@@ -187,6 +189,7 @@ export default async function ProfilePage() {
 
   const stats = await loadStats(safeProfile.id);
   const banner = getBanner(safeProfile.equipped_banner);
+  const userIsAdmin = isAdminEmail(user.email);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -266,6 +269,9 @@ export default async function ProfilePage() {
               <Store className="h-4 w-4" /> Ouvrir la boutique
             </Link>
           </div>
+
+          {/* Bouton admin — visible uniquement si l'email est dans ADMIN_EMAILS */}
+          {userIsAdmin && <AdminGrantButton amount={10_000} />}
 
           {/* Stats quiz */}
           <div className="rounded-2xl border border-border bg-bg-card/40 p-5">

@@ -26,6 +26,8 @@ type ProgressAchievement = Achievement & {
   claimed: boolean;
 };
 
+type RowState = "claimed" | "ready" | "locked";
+
 export function AchievementList() {
   const router = useRouter();
   const [items, setItems] = useState<ProgressAchievement[] | null>(null);
@@ -57,9 +59,7 @@ export function AchievementList() {
     setClaiming(true);
     setError(null);
 
-    // Update optimiste : on marque tout de suite les succès débloqués comme
-    // réclamés côté UI, et on affiche le flash sans attendre la réponse.
-    // Si le serveur rejette, on annule.
+    // Update optimiste : on marque les succès comme réclamés tout de suite.
     const previousItems = items;
     const expectedReward = unclaimedReward;
     setItems(
@@ -73,13 +73,10 @@ export function AchievementList() {
       const res = await fetch("/api/achievements/claim", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur");
-      // Synchro finale avec le serveur (cas où des succès auraient été
-      // débloqués entre-temps par un autre onglet).
       setTimeout(() => setFlash(null), 3000);
       await load();
       router.refresh();
     } catch (err) {
-      // Rollback : on restaure l'état précédent
       setItems(previousItems);
       setFlash(null);
       setError(err instanceof Error ? err.message : "Erreur");
@@ -106,11 +103,27 @@ export function AchievementList() {
     );
   }
 
-  // Trie : à réclamer d'abord, puis débloqués, puis verrouillés
+  // Trie : à réclamer d'abord, puis débloqués, puis verrouillés (avec progression),
+  // puis verrouillés (sans progression), puis réclamés en dernier.
   const sorted = [...items].sort((a, b) => {
-    const rank = (x: ProgressAchievement) =>
-      x.unlocked && !x.claimed ? 0 : x.claimed ? 2 : 1;
-    return rank(a) - rank(b);
+    const rank = (x: ProgressAchievement): number => {
+      if (x.unlocked && !x.claimed) return 0; // à collecter
+      if (x.claimed) return 3; // déjà fait, on push tout en bas
+      // pas encore débloqué : threshold avec progression > 0 d'abord
+      if (x.type === "threshold" && (x.current ?? 0) > 0) return 1;
+      return 2;
+    };
+    const ra = rank(a);
+    const rb = rank(b);
+    if (ra !== rb) return ra - rb;
+    // Au sein d'un même rang : trier par % de progression décroissant pour
+    // les threshold, sinon par récompense décroissante
+    const aPct =
+      a.type === "threshold" ? (a.current ?? 0) / a.target : 0;
+    const bPct =
+      b.type === "threshold" ? (b.current ?? 0) / b.target : 0;
+    if (aPct !== bPct) return bPct - aPct;
+    return b.reward - a.reward;
   });
 
   const unlockedCount = items.filter((a) => a.unlocked).length;
@@ -120,14 +133,15 @@ export function AchievementList() {
     <div className="space-y-4">
       {/* Header avec stats globales */}
       <div className="rounded-2xl border border-border bg-bg-card/40 p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div>
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <Trophy className="h-4 w-4 text-accent-gold" />
               Mes succès
             </h2>
             <p className="text-xs text-text-muted mt-1">
-              {unlockedCount} sur {totalCount} débloqués
+              {unlockedCount} sur {totalCount} débloqués ·{" "}
+              {Math.round((unlockedCount / totalCount) * 100)}%
             </p>
           </div>
           {unclaimedCount > 0 && (
@@ -146,7 +160,7 @@ export function AchievementList() {
             </button>
           )}
         </div>
-        <div className="h-1.5 rounded-full bg-border overflow-hidden">
+        <div className="h-2 rounded-full bg-border overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-accent-red via-accent-gold to-accent-blue transition-all"
             style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
@@ -179,7 +193,7 @@ function AchievementRow({
   const target = isThreshold ? achievement.target : 1;
   const pct = Math.min(100, (current / target) * 100);
 
-  const state = achievement.claimed
+  const state: RowState = achievement.claimed
     ? "claimed"
     : achievement.unlocked
     ? "ready"
@@ -188,15 +202,17 @@ function AchievementRow({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-4 transition-all",
+        "rounded-2xl border p-4 sm:p-5 transition-all",
         RARITY_BORDER[achievement.rarity],
         RARITY_BG[achievement.rarity],
         state === "ready" &&
           "ring-2 ring-accent-red/40 shadow-lg shadow-accent-red/10",
-        state === "locked" && "opacity-70",
+        state === "locked" && "opacity-80",
+        state === "claimed" && "opacity-75",
       )}
     >
-      <div className="flex items-center gap-4">
+      {/* Ligne du haut : emoji + nom + récompense */}
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Emoji */}
         <div
           className={cn(
@@ -218,7 +234,7 @@ function AchievementRow({
           )}
         </div>
 
-        {/* Texte + progression */}
+        {/* Nom + rareté + description */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-sm sm:text-base">
@@ -236,36 +252,10 @@ function AchievementRow({
           <p className="text-xs sm:text-sm text-text-muted mt-0.5">
             {achievement.description}
           </p>
-
-          {/* Barre de progression (uniquement pour les threshold) */}
-          {isThreshold && state !== "claimed" && (
-            <div className="mt-2.5">
-              <div className="flex items-center justify-between text-xs text-text-dim mb-1">
-                <span className="font-mono tabular">
-                  {current.toLocaleString("fr-FR")} /{" "}
-                  {target.toLocaleString("fr-FR")}
-                </span>
-                <span className="font-semibold">
-                  {Math.round(pct)}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-border overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full transition-all",
-                    state === "ready"
-                      ? "bg-gradient-to-r from-accent-red to-accent-blue"
-                      : "bg-text-dim/60",
-                  )}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Status / récompense */}
-        <div className="shrink-0 text-right">
+        {/* Récompense / statut */}
+        <div className="shrink-0">
           {state === "claimed" ? (
             <div className="inline-flex items-center gap-1 rounded-md bg-success/15 border border-success/30 px-2.5 py-1 text-xs font-semibold text-success">
               <Check className="h-3 w-3" /> Réclamé
@@ -284,6 +274,58 @@ function AchievementRow({
           )}
         </div>
       </div>
+
+      {/* Barre de progression — pleine largeur, plus prominente.
+          Pour les threshold (évolutifs) : on l'affiche dans tous les états
+          sauf "claimed" (où elle ne sert plus à rien). */}
+      {isThreshold && state !== "claimed" && (
+        <div className="mt-4">
+          {/* Track */}
+          <div className="relative h-3 rounded-full bg-bg/60 border border-border/60 overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-500 ease-out",
+                state === "ready"
+                  ? "bg-gradient-to-r from-accent-red via-accent-gold to-accent-blue"
+                  : pct > 0
+                  ? "bg-gradient-to-r from-accent-blue/70 to-accent-blue"
+                  : "bg-text-dim/30",
+              )}
+              style={{ width: `${pct}%` }}
+            />
+            {/* Pulse subtil quand ready */}
+            {state === "ready" && (
+              <div className="absolute inset-0 rounded-full ring-1 ring-accent-red/40 animate-pulse pointer-events-none" />
+            )}
+          </div>
+          {/* Légende sous la barre */}
+          <div className="flex items-center justify-between mt-1.5 text-xs">
+            <span className="font-mono tabular text-text-muted">
+              <span
+                className={cn(
+                  "font-semibold",
+                  state === "ready" ? "text-accent-red" : "text-text",
+                )}
+              >
+                {current.toLocaleString("fr-FR")}
+              </span>
+              <span className="text-text-dim"> / {target.toLocaleString("fr-FR")}</span>
+            </span>
+            <span
+              className={cn(
+                "font-semibold tabular",
+                state === "ready"
+                  ? "text-accent-red"
+                  : pct >= 75
+                  ? "text-accent-gold"
+                  : "text-text-dim",
+              )}
+            >
+              {Math.round(pct)}%
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

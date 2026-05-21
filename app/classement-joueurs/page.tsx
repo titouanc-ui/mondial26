@@ -117,7 +117,8 @@ export default async function LeaderboardPage() {
               </div>
               <p className="mt-2 text-sm text-text-muted">
                 Connecte-toi avec Google pour ajouter un badge vérifié à ton
-                pseudo et accumuler des points pour la boutique (bientôt).
+                pseudo, gagner des Buts et collectionner des cosmétiques dans
+                la boutique.
               </p>
               <div className="mt-4">
                 <GoogleSignInButton
