@@ -131,3 +131,64 @@ export const RARITY_TEXT: Record<Rarity, string> = {
   epic: "text-purple-400",
   legendary: "text-accent-gold",
 };
+
+// ============================================================
+// Chaînes de progression
+// ============================================================
+// Les succès threshold qui partagent la même métrique et constituent
+// une montée en niveau (ex. score 500 → 800 → 1000 → … → 1500) sont
+// regroupés dans une seule "chaîne" dans l'UI : on ne montre qu'une
+// carte avec les tiers précédents en petit + le tier en cours en grand.
+//
+// Les succès non listés ici restent affichés individuellement.
+
+export type ChainId = "score" | "cumul" | "games";
+
+export const ACHIEVEMENT_CHAINS: Record<
+  ChainId,
+  { title: string; tierIds: string[]; emoji: string }
+> = {
+  score: {
+    title: "Record sur une partie",
+    emoji: "🎯",
+    tierIds: [
+      "score-500",
+      "score-800",
+      "score-1000",
+      "score-1100",
+      "score-1200",
+      "score-1300",
+      "score-1400",
+      "score-1500",
+    ],
+  },
+  cumul: {
+    title: "Score cumulé",
+    emoji: "📚",
+    tierIds: ["cumul-1k", "cumul-5k", "cumul-10k", "cumul-25k", "cumul-50k"],
+  },
+  games: {
+    title: "Parties jouées",
+    emoji: "🎮",
+    tierIds: ["games-1", "games-10", "games-50", "games-100", "games-500"],
+  },
+};
+
+/** Map inverse : achievementId → chainId. Pratique pour filtrer. */
+export const ACHIEVEMENT_TO_CHAIN: Record<string, ChainId> = (() => {
+  const map: Record<string, ChainId> = {};
+  for (const [chainId, chain] of Object.entries(ACHIEVEMENT_CHAINS) as [
+    ChainId,
+    (typeof ACHIEVEMENT_CHAINS)[ChainId],
+  ][]) {
+    for (const id of chain.tierIds) {
+      map[id] = chainId;
+    }
+  }
+  return map;
+})();
+
+/** Vrai si l'id appartient à une chaîne de progression. */
+export function isChainedAchievement(id: string): boolean {
+  return id in ACHIEVEMENT_TO_CHAIN;
+}
