@@ -144,10 +144,10 @@ export default function TermsPage() {
             Tu peux demander la suppression de ton compte à tout moment en
             écrivant à{" "}
             <a
-              href="mailto:contact@mondial26.app"
+              href="mailto:titouan.c@tteau.com"
               className="text-accent-blue hover:underline"
             >
-              contact@mondial26.app
+              titouan.c@tteau.com
             </a>
             . Toutes tes données personnelles seront effacées sous 30 jours, y
             compris tes scores, ton inventaire et tes Buts.
@@ -187,10 +187,10 @@ export default function TermsPage() {
           <p className="text-text-muted">
             Pour toute question concernant ces conditions, écris-nous à{" "}
             <a
-              href="mailto:contact@mondial26.app"
+              href="mailto:titouan.c@tteau.com"
               className="text-accent-blue hover:underline"
             >
-              contact@mondial26.app
+              titouan.c@tteau.com
             </a>
             .
           </p>

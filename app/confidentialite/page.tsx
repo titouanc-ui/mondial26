@@ -35,10 +35,10 @@ export default function PrivacyPage() {
           <p className="text-text-muted mt-2">
             Pour toute question concernant tes données, contacte-nous via{" "}
             <a
-              href="mailto:contact@mondial26.app"
+              href="mailto:titouan.c@tteau.com"
               className="text-accent-blue hover:underline"
             >
-              contact@mondial26.app
+              titouan.c@tteau.com
             </a>
             .
           </p>
@@ -168,10 +168,10 @@ export default function PrivacyPage() {
           <p className="text-text-muted mt-3">
             Pour exercer ces droits, envoie une demande à{" "}
             <a
-              href="mailto:contact@mondial26.app"
+              href="mailto:titouan.c@tteau.com"
               className="text-accent-blue hover:underline"
             >
-              contact@mondial26.app
+              titouan.c@tteau.com
             </a>{" "}
             avec ton pseudo ou ton email Google. Nous répondons sous 30 jours
             maximum.
