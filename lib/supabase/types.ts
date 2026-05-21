@@ -33,8 +33,19 @@ export interface Profile {
   avatar_url: string | null;
   favorite_team: string | null;
   bio: string | null;
+  equipped_banner: string | null;
+  equipped_frame: string | null;
+  equipped_badge: string | null;
+  equipped_icon: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface InventoryItem {
+  profile_id: string;
+  item_id: string;
+  item_type: "banner" | "frame" | "badge" | "icon";
+  acquired_at: string;
 }
 
 export interface QuizSession {

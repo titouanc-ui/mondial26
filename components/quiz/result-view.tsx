@@ -33,6 +33,8 @@ interface StoredResult {
   profileId: string | null;
   theme: string;
   themeLabel: string;
+  coinsEarned?: number;
+  coinsTotal?: number;
 }
 
 export function ResultView() {
@@ -132,6 +134,20 @@ export function ResultView() {
         <div className="mt-1 text-sm text-text-muted">
           {result.correctCount} bonnes réponses sur {total}
         </div>
+
+        {result.coinsEarned !== undefined && result.coinsEarned > 0 && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent-red/30 bg-accent-red/10 px-4 py-1.5">
+            <Sparkles className="h-4 w-4 text-accent-red" />
+            <span className="text-sm font-semibold">
+              +{result.coinsEarned} Buts gagnés
+            </span>
+            {result.coinsTotal !== undefined && (
+              <span className="text-xs text-text-muted">
+                (solde {result.coinsTotal})
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link

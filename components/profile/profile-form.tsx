@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Camera,
@@ -13,12 +12,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Team } from "@/lib/teams";
+import { ProfileAvatar } from "@/components/profile/profile-avatar";
 
 interface InitialProfile {
   pseudo: string;
   bio: string | null;
   favorite_team: string | null;
   avatar_url: string | null;
+  equipped_frame?: string | null;
 }
 
 interface Props {
@@ -111,13 +112,6 @@ export function ProfileForm({ profile, teams }: Props) {
     }
   };
 
-  const initials = pseudo
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
   const justSaved = savedAt && Date.now() - savedAt < 2500;
 
   return (
@@ -125,25 +119,17 @@ export function ProfileForm({ profile, teams }: Props) {
       {/* Carte avatar + pseudo */}
       <div className="rounded-2xl border border-border bg-bg-card/40 p-6">
         <div className="flex flex-col sm:flex-row gap-6 items-start">
-          {/* Avatar */}
+          {/* Avatar (avec cadre équipé) */}
           <div className="relative">
-            <div className="relative h-28 w-28 rounded-full overflow-hidden bg-bg-elevated border-2 border-border">
-              {avatarUrl ? (
-                <Image
-                  src={avatarUrl}
-                  alt={pseudo}
-                  fill
-                  sizes="112px"
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-text-muted bg-gradient-to-br from-accent-red/20 to-accent-blue/20">
-                  {initials || "?"}
-                </div>
-              )}
+            <div className="relative">
+              <ProfileAvatar
+                avatarUrl={avatarUrl}
+                pseudo={pseudo}
+                frameId={profile.equipped_frame}
+                size={112}
+              />
               {uploadingAvatar && (
-                <div className="absolute inset-0 bg-bg/80 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-bg/80 flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-text" />
                 </div>
               )}

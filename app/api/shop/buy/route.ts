@@ -1,0 +1,128 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  getSupabaseServer,
+  getSupabaseAdmin,
+  isSupabaseAdminConfigured,
+} from "@/lib/supabase/server";
+import { getItem } from "@/lib/shop/catalog";
+
+const Schema = z.object({
+  itemId: z.string().min(1).max(60),
+});
+
+export async function POST(req: Request) {
+  if (!isSupabaseAdminConfigured()) {
+    return NextResponse.json(
+      { error: "Supabase non configuré" },
+      { status: 503 },
+    );
+  }
+
+  const supabase = await getSupabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Connecte-toi pour acheter dans la boutique." },
+      { status: 401 },
+    );
+  }
+
+  const body = await req.json().catch(() => null);
+  const parsed = Schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
+  }
+
+  const item = getItem(parsed.data.itemId);
+  if (!item) {
+    return NextResponse.json({ error: "Objet inconnu" }, { status: 404 });
+  }
+  if (item.price < 0) {
+    return NextResponse.json({ error: "Objet non achetable" }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdmin();
+
+  // Profil
+  const { data: profileRow, error: pErr } = await admin
+    .from("profiles")
+    .select("id, coins, is_verified")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (pErr || !profileRow) {
+    return NextResponse.json({ error: "Profil introuvable" }, { status: 500 });
+  }
+  const profile = profileRow as { id: string; coins: number; is_verified: boolean };
+
+  // Garde-fou : badge réservé aux comptes vérifiés
+  if (item.type === "badge" && !profile.is_verified) {
+    return NextResponse.json(
+      { error: "Les badges sont réservés aux comptes vérifiés." },
+      { status: 403 },
+    );
+  }
+
+  // Déjà possédé ?
+  const { data: owned } = await admin
+    .from("user_inventory")
+    .select("item_id")
+    .eq("profile_id", profile.id)
+    .eq("item_id", item.id)
+    .maybeSingle();
+  if (owned) {
+    return NextResponse.json(
+      { error: "Tu possèdes déjà cet objet." },
+      { status: 409 },
+    );
+  }
+
+  // Fonds suffisants ?
+  if (profile.coins < item.price) {
+    return NextResponse.json(
+      { error: `Il te manque ${item.price - profile.coins} Buts.` },
+      { status: 402 },
+    );
+  }
+
+  // Transaction : débit coins + ajout inventory
+  // (Pas de transaction atomique côté Supabase JS — on séquence, on rollback si besoin.)
+  const newCoins = profile.coins - item.price;
+  const { error: updErr } = await admin
+    .from("profiles")
+    .update({ coins: newCoins })
+    .eq("id", profile.id);
+  if (updErr) {
+    console.error("[shop/buy] coin update failed", updErr);
+    return NextResponse.json(
+      { error: "Échec du débit, réessaie." },
+      { status: 500 },
+    );
+  }
+
+  const { error: invErr } = await admin.from("user_inventory").insert({
+    profile_id: profile.id,
+    item_id: item.id,
+    item_type: item.type,
+  });
+  if (invErr) {
+    // Rollback : on remet les coins
+    await admin
+      .from("profiles")
+      .update({ coins: profile.coins })
+      .eq("id", profile.id);
+    console.error("[shop/buy] inventory insert failed", invErr);
+    return NextResponse.json(
+      { error: "Échec de l'achat, fonds restaurés." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    item_id: item.id,
+    coins: newCoins,
+  });
+}

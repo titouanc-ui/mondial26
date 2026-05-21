@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, Coins, Gamepad2, Star, AlertCircle } from "lucide-react";
+import { Trophy, Coins, Gamepad2, Star, AlertCircle, Store } from "lucide-react";
 import {
   getSupabaseServer,
   getSupabaseAdmin,
@@ -10,6 +10,7 @@ import { GoogleSignInButton } from "@/components/auth/google-button";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { TEAMS } from "@/lib/teams";
+import { getBanner } from "@/lib/shop/catalog";
 import type { Profile } from "@/lib/supabase/types";
 import type { Metadata } from "next";
 
@@ -173,9 +174,14 @@ export default async function ProfilePage() {
     avatar_url: profile.avatar_url ?? null,
     favorite_team: profile.favorite_team ?? null,
     bio: profile.bio ?? null,
+    equipped_banner: profile.equipped_banner ?? null,
+    equipped_frame: profile.equipped_frame ?? null,
+    equipped_badge: profile.equipped_badge ?? null,
+    equipped_icon: profile.equipped_icon ?? null,
   };
 
   const stats = await loadStats(safeProfile.id);
+  const banner = getBanner(safeProfile.equipped_banner);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -196,7 +202,24 @@ export default async function ProfilePage() {
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
+      {/* Bannière personnalisée */}
+      {banner && (
+        <div
+          className="mt-8 relative h-32 sm:h-40 w-full rounded-2xl overflow-hidden border border-border"
+          style={{ background: banner.gradient }}
+        >
+          {banner.flag && (
+            <span className="absolute right-6 top-1/2 -translate-y-1/2 text-6xl sm:text-7xl drop-shadow-lg opacity-70">
+              {banner.flag}
+            </span>
+          )}
+          <div className="absolute left-5 bottom-3 text-xs uppercase tracking-wider text-white/80 font-semibold drop-shadow">
+            {banner.name}
+          </div>
+        </div>
+      )}
+
+      <div className={`${banner ? "mt-6" : "mt-8"} grid gap-8 lg:grid-cols-[1fr_320px]`}>
         {/* Formulaire d'édition */}
         <ProfileForm
           profile={{
@@ -204,6 +227,7 @@ export default async function ProfilePage() {
             bio: safeProfile.bio,
             favorite_team: safeProfile.favorite_team,
             avatar_url: safeProfile.avatar_url,
+            equipped_frame: safeProfile.equipped_frame,
           }}
           teams={TEAMS}
         />
@@ -226,9 +250,15 @@ export default async function ProfilePage() {
               <span className="text-sm text-text-muted">Buts</span>
             </div>
             <p className="mt-2 text-xs text-text-muted">
-              Dépense tes Buts dans la <strong>boutique</strong> (bientôt) :
-              avatars, thèmes, boosts de score…
+              Dépense tes Buts dans la boutique : bannières, cadres, badges,
+              icônes.
             </p>
+            <Link
+              href="/boutique"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent-red px-3 py-2 text-sm font-semibold text-white hover:bg-accent-red-hover transition-colors"
+            >
+              <Store className="h-4 w-4" /> Ouvrir la boutique
+            </Link>
           </div>
 
           {/* Stats quiz */}
