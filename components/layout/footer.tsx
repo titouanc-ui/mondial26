@@ -78,13 +78,31 @@ export function Footer() {
             </div>
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim">
-                Infos
+                Légal
               </h3>
               <ul className="mt-3 space-y-2 text-sm">
-                <li className="text-text-muted">
+                <li>
+                  <Link
+                    href="/confidentialite"
+                    className="text-text-muted hover:text-text transition-colors"
+                  >
+                    Politique de confidentialité
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/conditions"
+                    className="text-text-muted hover:text-text transition-colors"
+                  >
+                    Conditions d'utilisation
+                  </Link>
+                </li>
+                <li className="pt-2 text-text-dim text-xs">
                   USA · Canada · Mexique
                 </li>
-                <li className="text-text-muted">11 juin → 19 juillet 2026</li>
+                <li className="text-text-dim text-xs">
+                  11 juin → 19 juillet 2026
+                </li>
               </ul>
             </div>
           </div>

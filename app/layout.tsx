@@ -49,6 +49,11 @@ export const metadata: Metadata = {
     description:
       "News, stats live, classements et quiz sur la Coupe du Monde 2026.",
   },
+  // Verification de propriété pour Google Search Console (requise pour
+  // publier l'écran de consentement OAuth). Valeur à fournir via env var.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export const viewport: Viewport = {
