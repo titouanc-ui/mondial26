@@ -105,34 +105,36 @@ export async function POST(req: Request) {
       if (sessionErr) throw sessionErr;
       savedProfileId = profileId;
 
-      // Crédit de Buts (monnaie virtuelle)
-      // Barème : 10 Buts par bonne réponse + bonus 50 si parfait (10/10)
-      // Max 150 Buts/partie. Suffisamment lent pour rendre les objets chers
-      // (frame platine = 3000 Buts = ~30+ parties).
+      // MAJ du profil :
+      // - Crédit de Buts : 10 par bonne réponse + bonus 50 si parfait (max 150)
+      // - Score cumulé : on ajoute le score de la partie au total lifetime
       const coinsEarned =
         result.correctCount * 10 + (result.correctCount === snapshot.questions.length ? 50 : 0);
-      if (coinsEarned > 0) {
-        const { data: profileRow } = await admin
-          .from("profiles")
-          .select("coins")
-          .eq("id", profileId)
-          .single();
-        const currentCoins = (profileRow as { coins: number } | null)?.coins ?? 0;
-        await admin
-          .from("profiles")
-          .update({ coins: currentCoins + coinsEarned })
-          .eq("id", profileId);
-        // Le client peut lire la nouvelle valeur via /profil ou via le Header.
-        return NextResponse.json({
-          score: result.totalScore,
-          correctCount: result.correctCount,
-          perQuestion: result.perQuestion,
-          saved: true,
-          profileId: savedProfileId,
-          coinsEarned,
-          coinsTotal: currentCoins + coinsEarned,
-        });
-      }
+
+      const { data: profileRow } = await admin
+        .from("profiles")
+        .select("coins, points_total")
+        .eq("id", profileId)
+        .single();
+      const current = profileRow as { coins: number; points_total: number } | null;
+      const newCoins = (current?.coins ?? 0) + coinsEarned;
+      const newPoints = (current?.points_total ?? 0) + result.totalScore;
+
+      await admin
+        .from("profiles")
+        .update({ coins: newCoins, points_total: newPoints })
+        .eq("id", profileId);
+
+      return NextResponse.json({
+        score: result.totalScore,
+        correctCount: result.correctCount,
+        perQuestion: result.perQuestion,
+        saved: true,
+        profileId: savedProfileId,
+        coinsEarned,
+        coinsTotal: newCoins,
+        pointsTotal: newPoints,
+      });
     } catch (err) {
       console.error("[quiz/submit] persistence failed:", err);
       // On renvoie quand même le score, juste sans persistance

@@ -45,7 +45,10 @@ export interface BadgeItem extends BaseItem {
 
 export interface IconItem extends BaseItem {
   type: "icon";
-  imageUrl: string;
+  /** Emoji Unicode utilisé comme illustration (libre de droits). */
+  emoji: string;
+  /** Dégradé CSS pour le fond circulaire derrière l'emoji. */
+  bgGradient: string;
 }
 
 export type ShopItem = BannerItem | FrameItem | BadgeItem | IconItem;
@@ -264,9 +267,66 @@ export const BANNERS: BannerItem[] = [
 ];
 
 // ============================================================
-// ICÔNES — en attente d'images de l'utilisateur
+// ICÔNES — 30 emojis stylés (libres de droits)
+// Affichés en bas-gauche de l'avatar (taille >= 64px uniquement)
+// Pas de progression : achetables dans l'ordre que tu veux
 // ============================================================
-export const ICONS: IconItem[] = [];
+
+// Dégradés réutilisables selon la rareté visuelle
+const GRAD = {
+  slate: "linear-gradient(135deg,#1c2434,#3a4866)",
+  blue: "linear-gradient(135deg,#0033a0,#3b6dd4)",
+  red: "linear-gradient(135deg,#c8102e,#e0264a)",
+  green: "linear-gradient(135deg,#006847,#10b981)",
+  gold: "linear-gradient(135deg,#d4af37,#facc15)",
+  bronze: "linear-gradient(135deg,#92400e,#d97706)",
+  silver: "linear-gradient(135deg,#9ca3af,#e5e7eb)",
+  purple: "linear-gradient(135deg,#6d28d9,#c084fc)",
+  pink: "linear-gradient(135deg,#be185d,#f472b6)",
+  fire: "linear-gradient(135deg,#dc2626,#f59e0b)",
+  electric: "linear-gradient(135deg,#1e40af,#22d3ee)",
+  rainbow: "linear-gradient(135deg,#c8102e,#facc15,#10b981,#3b82f6,#a855f7)",
+} as const;
+
+export const ICONS: IconItem[] = [
+  // ── Foot basique (commun) ─────────────────────────────────
+  { id: "icon-ball", type: "icon", name: "Ballon", description: "Le classique des classiques.", price: 100, rarity: "common", emoji: "⚽", bgGradient: GRAD.slate },
+  { id: "icon-goal", type: "icon", name: "Cage", description: "Le but, l'objectif ultime.", price: 100, rarity: "common", emoji: "🥅", bgGradient: GRAD.slate },
+  { id: "icon-boots", type: "icon", name: "Crampons", description: "Pour mordre le terrain.", price: 150, rarity: "common", emoji: "👟", bgGradient: GRAD.slate },
+  { id: "icon-jersey", type: "icon", name: "Maillot", description: "Aux couleurs des Bleus.", price: 200, rarity: "common", emoji: "🎽", bgGradient: GRAD.blue },
+  { id: "icon-gloves", type: "icon", name: "Gants", description: "Le gardien légendaire.", price: 200, rarity: "common", emoji: "🧤", bgGradient: GRAD.slate },
+  { id: "icon-megaphone", type: "icon", name: "Mégaphone", description: "Pour faire vibrer les tribunes.", price: 200, rarity: "common", emoji: "📣", bgGradient: GRAD.fire },
+  { id: "icon-heart", type: "icon", name: "Cœur Bleu", description: "Allez les Bleus !", price: 200, rarity: "common", emoji: "❤️", bgGradient: GRAD.red },
+
+  // ── Rare ──────────────────────────────────────────────────
+  { id: "icon-stadium", type: "icon", name: "Stade", description: "MetLife, Estadio Azteca, BMO.", price: 250, rarity: "rare", emoji: "🏟️", bgGradient: GRAD.electric },
+  { id: "icon-bronze-medal", type: "icon", name: "Médaille bronze", description: "Sur le podium.", price: 300, rarity: "rare", emoji: "🥉", bgGradient: GRAD.bronze },
+  { id: "icon-fire", type: "icon", name: "En feu", description: "Quand tout te réussit.", price: 300, rarity: "rare", emoji: "🔥", bgGradient: GRAD.fire },
+  { id: "icon-bolt", type: "icon", name: "Éclair", description: "Plus vite que Mbappé.", price: 300, rarity: "rare", emoji: "⚡", bgGradient: GRAD.electric },
+  { id: "icon-fr", type: "icon", name: "France", description: "Cocorico.", price: 350, rarity: "rare", emoji: "🇫🇷", bgGradient: GRAD.blue },
+  { id: "icon-br", type: "icon", name: "Brésil", description: "Le pays du foot.", price: 350, rarity: "rare", emoji: "🇧🇷", bgGradient: GRAD.green },
+  { id: "icon-ar", type: "icon", name: "Argentine", description: "Champions 2022.", price: 350, rarity: "rare", emoji: "🇦🇷", bgGradient: GRAD.electric },
+  { id: "icon-cap", type: "icon", name: "Casquette", description: "Mode supporter.", price: 350, rarity: "rare", emoji: "🧢", bgGradient: GRAD.red },
+  { id: "icon-boom", type: "icon", name: "Boom", description: "Frappe enroulée pleine lucarne.", price: 400, rarity: "rare", emoji: "💥", bgGradient: GRAD.fire },
+  { id: "icon-star", type: "icon", name: "Étoile", description: "Quelque chose de spécial.", price: 400, rarity: "rare", emoji: "⭐", bgGradient: GRAD.gold },
+
+  // ── Épique ────────────────────────────────────────────────
+  { id: "icon-silver-medal", type: "icon", name: "Médaille argent", description: "Vice-champion.", price: 500, rarity: "epic", emoji: "🥈", bgGradient: GRAD.silver },
+  { id: "icon-rooster", type: "icon", name: "Coq français", description: "L'emblème des Bleus.", price: 500, rarity: "epic", emoji: "🐓", bgGradient: GRAD.red },
+  { id: "icon-tv", type: "icon", name: "TV", description: "Pour les soirs de finale.", price: 500, rarity: "epic", emoji: "📺", bgGradient: GRAD.purple },
+  { id: "icon-mic", type: "icon", name: "Micro", description: "Commentateur né.", price: 500, rarity: "epic", emoji: "🎤", bgGradient: GRAD.purple },
+  { id: "icon-lion", type: "icon", name: "Lion", description: "Pour les Three Lions.", price: 600, rarity: "epic", emoji: "🦁", bgGradient: GRAD.gold },
+  { id: "icon-gold-medal", type: "icon", name: "Médaille or", description: "Le sommet du podium.", price: 700, rarity: "epic", emoji: "🥇", bgGradient: GRAD.gold },
+  { id: "icon-double-star", type: "icon", name: "Deux étoiles", description: "Comme la France 98 et 18.", price: 800, rarity: "epic", emoji: "✨", bgGradient: GRAD.gold },
+  { id: "icon-trophy", type: "icon", name: "Trophée", description: "Le rêve ultime.", price: 1000, rarity: "epic", emoji: "🏆", bgGradient: GRAD.gold },
+  { id: "icon-corner-flag", type: "icon", name: "Drapeau corner", description: "Coup de pied de coin.", price: 1000, rarity: "epic", emoji: "🚩", bgGradient: GRAD.red },
+  { id: "icon-clover", type: "icon", name: "Trèfle", description: "Un peu de chance ne fait pas de mal.", price: 1200, rarity: "epic", emoji: "🍀", bgGradient: GRAD.green },
+
+  // ── Légendaire ────────────────────────────────────────────
+  { id: "icon-crown", type: "icon", name: "Couronne", description: "Roi du quiz.", price: 1500, rarity: "legendary", emoji: "👑", bgGradient: GRAD.gold },
+  { id: "icon-triple-star", type: "icon", name: "Trois étoiles", description: "Champion de champions.", price: 2000, rarity: "legendary", emoji: "🌟", bgGradient: GRAD.rainbow },
+  { id: "icon-goat", type: "icon", name: "GOAT", description: "Greatest Of All Time.", price: 3000, rarity: "legendary", emoji: "🐐", bgGradient: GRAD.rainbow },
+];
 
 // ============================================================
 // Accès par id (utilisé partout pour résoudre un slot équipé)

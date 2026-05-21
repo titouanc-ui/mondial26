@@ -228,6 +228,7 @@ export default async function ProfilePage() {
             favorite_team: safeProfile.favorite_team,
             avatar_url: safeProfile.avatar_url,
             equipped_frame: safeProfile.equipped_frame,
+            equipped_icon: safeProfile.equipped_icon,
           }}
           teams={TEAMS}
         />

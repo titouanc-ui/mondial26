@@ -190,7 +190,7 @@ export function ShopGrid({
             suivant n'est accessible qu'après l'achat du précédent.
           </p>
           <TrophyRoad
-            items={catalog.frames.filter((f) => f.id !== "frame-default")}
+            items={catalog.frames}
             ownedIds={owned}
             equippedId={equipped.frame}
             coins={coins}
@@ -211,7 +211,7 @@ export function ShopGrid({
             suivant n'est accessible qu'après l'achat du précédent.
           </p>
           <TrophyRoad
-            items={catalog.badges.filter((b) => b.id !== "badge-default")}
+            items={catalog.badges}
             ownedIds={owned}
             equippedId={equipped.badge}
             coins={coins}
@@ -382,8 +382,11 @@ function ItemPreview({ item }: { item: ShopItem }) {
   }
   // icon
   return (
-    <div className="h-28 w-full flex items-center justify-center bg-bg-elevated/40 text-text-muted">
-      <Sparkles className="h-8 w-8 text-text-dim" />
+    <div
+      className="h-28 w-full flex items-center justify-center"
+      style={{ background: item.bgGradient }}
+    >
+      <span className="text-5xl drop-shadow-lg">{item.emoji}</span>
     </div>
   );
 }

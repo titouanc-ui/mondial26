@@ -20,6 +20,7 @@ interface InitialProfile {
   favorite_team: string | null;
   avatar_url: string | null;
   equipped_frame?: string | null;
+  equipped_icon?: string | null;
 }
 
 interface Props {
@@ -126,6 +127,8 @@ export function ProfileForm({ profile, teams }: Props) {
                 avatarUrl={avatarUrl}
                 pseudo={pseudo}
                 frameId={profile.equipped_frame}
+                favoriteTeam={favoriteTeam}
+                iconId={profile.equipped_icon}
                 size={112}
               />
               {uploadingAvatar && (

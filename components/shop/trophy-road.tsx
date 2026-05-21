@@ -51,12 +51,16 @@ export function TrophyRoad({
     cont.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
   }, [items, ownedIds]);
 
+  // Helper : un item gratuit (price=0) est toujours "possédé" par défaut.
+  const isOwned = (item: TierItem) =>
+    item.price === 0 || ownedIds.has(item.id);
+
   // Statut de chaque palier
   const statuses: TierStatus[] = items.map((item, idx) => {
     if (equippedId === item.id) return "equipped";
-    if (ownedIds.has(item.id)) return "owned";
+    if (isOwned(item)) return "owned";
     const prev = idx === 0 ? null : items[idx - 1];
-    if (prev && !ownedIds.has(prev.id)) return "locked";
+    if (prev && !isOwned(prev)) return "locked";
     return "available";
   });
 
