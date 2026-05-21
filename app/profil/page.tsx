@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Trophy, Coins, Gamepad2, Star } from "lucide-react";
+import { Trophy, Coins, Gamepad2, Star, AlertCircle } from "lucide-react";
 import {
   getSupabaseServer,
   getSupabaseAdmin,
@@ -104,13 +103,35 @@ export default async function ProfilePage() {
   }
 
   const admin = getSupabaseAdmin();
-  const { data: profileData } = await admin
+  const { data: profileData, error: fetchErr } = await admin
     .from("profiles")
-    .select(
-      "id, pseudo, user_id, is_verified, points_total, coins, avatar_url, favorite_team, bio, created_at, updated_at",
-    )
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // Erreur SQL (typiquement : colonnes manquantes parce que la migration 0002 n'a pas été exécutée)
+  if (fetchErr) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-2xl border border-warning/30 bg-warning/10 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="h-5 w-5 text-warning" />
+            <h1 className="font-bold">Migration SQL manquante</h1>
+          </div>
+          <p className="text-sm text-text-muted">
+            La table <code>profiles</code> n'a pas encore les nouvelles colonnes
+            (<code>avatar_url</code>, <code>favorite_team</code>, <code>bio</code>,{" "}
+            <code>coins</code>). Exécute la migration{" "}
+            <code>supabase/migrations/0002_profile_extended.sql</code> dans
+            Supabase Studio &gt; SQL Editor.
+          </p>
+          <pre className="mt-4 overflow-x-auto rounded-lg bg-bg p-3 text-xs text-text-dim border border-border">
+            {fetchErr.message}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   // Cas rare : authentifié mais pas encore de profil → on en crée un
   let profile = profileData as Profile | null;
@@ -119,7 +140,7 @@ export default async function ProfilePage() {
       (user.user_metadata?.full_name as string | undefined) ??
       user.email?.split("@")[0] ??
       "Joueur";
-    const { data: newProfile } = await admin
+    const { data: newProfile, error: createErr } = await admin
       .from("profiles")
       .insert({
         pseudo: String(pseudoBase).slice(0, 20),
@@ -127,14 +148,34 @@ export default async function ProfilePage() {
       })
       .select("*")
       .single();
+    if (createErr) {
+      return (
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12">
+          <div className="rounded-2xl border border-error/30 bg-error/10 p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-5 w-5 text-error" />
+              <h1 className="font-bold">Impossible de créer le profil</h1>
+            </div>
+            <pre className="mt-3 overflow-x-auto rounded-lg bg-bg p-3 text-xs text-text-dim border border-border">
+              {createErr.message}
+            </pre>
+          </div>
+        </div>
+      );
+    }
     profile = newProfile as Profile;
   }
 
-  if (!profile) {
-    redirect("/?auth=error");
-  }
+  // Valeurs par défaut si la migration n'a partiellement pas tourné
+  const safeProfile = {
+    ...profile,
+    coins: profile.coins ?? 0,
+    avatar_url: profile.avatar_url ?? null,
+    favorite_team: profile.favorite_team ?? null,
+    bio: profile.bio ?? null,
+  };
 
-  const stats = await loadStats(profile.id);
+  const stats = await loadStats(safeProfile.id);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -159,10 +200,10 @@ export default async function ProfilePage() {
         {/* Formulaire d'édition */}
         <ProfileForm
           profile={{
-            pseudo: profile.pseudo,
-            bio: profile.bio,
-            favorite_team: profile.favorite_team,
-            avatar_url: profile.avatar_url,
+            pseudo: safeProfile.pseudo,
+            bio: safeProfile.bio,
+            favorite_team: safeProfile.favorite_team,
+            avatar_url: safeProfile.avatar_url,
           }}
           teams={TEAMS}
         />
@@ -180,7 +221,7 @@ export default async function ProfilePage() {
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
               <span className="font-mono text-4xl font-bold tracking-tight text-text">
-                {profile.coins}
+                {safeProfile.coins}
               </span>
               <span className="text-sm text-text-muted">Buts</span>
             </div>
@@ -216,7 +257,7 @@ export default async function ProfilePage() {
               <div className="flex items-center justify-between">
                 <dt className="text-text-muted">Score cumulé</dt>
                 <dd className="font-mono font-semibold">
-                  {profile.points_total}
+                  {safeProfile.points_total}
                 </dd>
               </div>
             </dl>

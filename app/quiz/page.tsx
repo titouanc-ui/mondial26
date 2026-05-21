@@ -8,6 +8,7 @@ import {
   Sparkles,
   ListChecks,
 } from "lucide-react";
+import { QuizTabs } from "@/components/quiz/quiz-tabs";
 import { countByTheme } from "@/lib/quiz/seed-questions";
 import {
   QUIZ_QUESTION_COUNT,
@@ -84,7 +85,9 @@ export default function QuizHubPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <QuizTabs className="mt-8" />
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {THEMES.map((theme) => {
           const Icon = theme.icon;
           const count =

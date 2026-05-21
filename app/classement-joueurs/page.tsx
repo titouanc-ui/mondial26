@@ -7,6 +7,7 @@ import {
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { GoogleSignInButton } from "@/components/auth/google-button";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { QuizTabs } from "@/components/quiz/quiz-tabs";
 import type { LeaderboardEntry } from "@/lib/supabase/types";
 import type { Metadata } from "next";
 
@@ -77,7 +78,10 @@ export default async function LeaderboardPage() {
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <div className="inline-flex items-center gap-2 rounded-full bg-accent-red/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent-red">
+            <Brain className="h-3 w-3" /> Quiz
+          </div>
+          <h1 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">
             Top joueurs
           </h1>
           <p className="mt-2 text-text-muted">
@@ -92,7 +96,9 @@ export default async function LeaderboardPage() {
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
+      <QuizTabs className="mt-8" />
+
+      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_280px]">
         <LeaderboardTable initial={initial} />
 
         <aside className="space-y-4">

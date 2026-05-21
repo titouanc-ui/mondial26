@@ -12,7 +12,6 @@ const NAV_LINKS = [
   { href: "/stats", label: "Stats" },
   { href: "/classement", label: "Classement" },
   { href: "/quiz", label: "Quiz", highlight: true },
-  { href: "/classement-joueurs", label: "Top joueurs" },
 ];
 
 export function Header() {
@@ -51,7 +50,10 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-1">
           {NAV_LINKS.map((link) => {
             const active =
-              pathname === link.href || pathname.startsWith(`${link.href}/`);
+              pathname === link.href ||
+              pathname.startsWith(`${link.href}/`) ||
+              // /classement-joueurs est rattaché à la section Quiz
+              (link.href === "/quiz" && pathname === "/classement-joueurs");
             return (
               <Link
                 key={link.href}
@@ -101,7 +103,9 @@ export function Header() {
           <div className="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               const active =
-                pathname === link.href || pathname.startsWith(`${link.href}/`);
+                pathname === link.href ||
+                pathname.startsWith(`${link.href}/`) ||
+                (link.href === "/quiz" && pathname === "/classement-joueurs");
               return (
                 <Link
                   key={link.href}
