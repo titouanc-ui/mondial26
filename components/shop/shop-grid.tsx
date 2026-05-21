@@ -335,7 +335,7 @@ function ItemPreview({ item }: { item: ShopItem }) {
     return (
       <div className="h-28 w-full flex items-center justify-center bg-bg-elevated/40">
         <BadgeCheck
-          className="h-16 w-16"
+          className={cn("h-16 w-16", item.glowClass)}
           style={{ color: item.color }}
           strokeWidth={2}
         />

@@ -7,6 +7,7 @@ import { Menu, X, Trophy, User, Coins, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { getBanner } from "@/lib/shop/catalog";
 
 const NAV_LINKS = [
   { href: "/news", label: "News" },
@@ -20,6 +21,7 @@ interface MiniProfile {
   coins: number;
   avatar_url: string | null;
   equipped_frame: string | null;
+  equipped_banner: string | null;
 }
 
 export function Header() {
@@ -42,7 +44,7 @@ export function Header() {
     setAuthed(true);
     const { data } = await supabase
       .from("profiles")
-      .select("pseudo, coins, avatar_url, equipped_frame")
+      .select("pseudo, coins, avatar_url, equipped_frame, equipped_banner")
       .eq("user_id", user.id)
       .maybeSingle();
     if (data) {
@@ -66,9 +68,30 @@ export function Header() {
     void loadProfile();
   }, [pathname, loadProfile]);
 
+  const banner = getBanner(profile?.equipped_banner);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 border-b border-border">
+      {/* Top bar avec bannière en background */}
+      <div className="relative overflow-hidden">
+        {/* Couche bannière (colorée si équipée) */}
+        {banner && (
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{ background: banner.gradient }}
+          />
+        )}
+        {/* Couche overlay sombre pour lisibilité — un peu plus transparente si bannière */}
+        <div
+          aria-hidden
+          className={cn(
+            "absolute inset-0 backdrop-blur-xl",
+            banner ? "bg-bg/72" : "bg-bg/80",
+          )}
+        />
+
+        <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
           className="flex items-center gap-2 font-bold text-lg tracking-tight shrink-0"
@@ -173,6 +196,7 @@ export function Header() {
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+        </div>
         </div>
       </div>
 

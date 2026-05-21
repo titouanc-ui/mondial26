@@ -5,10 +5,10 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
+import { RecentSessionsLive } from "@/components/quiz/recent-sessions";
 import { GoogleSignInButton } from "@/components/auth/google-button";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { QuizTabs } from "@/components/quiz/quiz-tabs";
-import type { LeaderboardEntry } from "@/lib/supabase/types";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,25 +19,11 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-async function loadLeaderboard(): Promise<LeaderboardEntry[]> {
-  if (!isSupabaseConfigured()) return [];
-  try {
-    const supabase = await getSupabaseServer();
-    const { data, error } = await supabase
-      .from("leaderboard_global")
-      .select("*")
-      .limit(50);
-    if (error) {
-      console.error("[leaderboard]", error);
-      return [];
-    }
-    return data ?? [];
-  } catch (err) {
-    console.error("[leaderboard]", err);
-    return [];
-  }
-}
-
+/**
+ * Charge UNIQUEMENT l'état utilisateur côté serveur (rapide : 1 query auth).
+ * Le leaderboard et les dernières parties sont chargés côté client pour
+ * que la page s'affiche instantanément (skeleton → données).
+ */
 async function loadCurrentUser(): Promise<{
   authed: boolean;
   pseudo: string | null;
@@ -69,10 +55,7 @@ async function loadCurrentUser(): Promise<{
 }
 
 export default async function LeaderboardPage() {
-  const [initial, currentUser] = await Promise.all([
-    loadLeaderboard(),
-    loadCurrentUser(),
-  ]);
+  const currentUser = await loadCurrentUser();
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -99,7 +82,10 @@ export default async function LeaderboardPage() {
       <QuizTabs className="mt-8" />
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_280px]">
-        <LeaderboardTable initial={initial} />
+        <div className="space-y-8">
+          <LeaderboardTable />
+          <RecentSessionsLive />
+        </div>
 
         <aside className="space-y-4">
           {currentUser.authed ? (

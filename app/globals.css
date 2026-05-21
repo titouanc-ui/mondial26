@@ -126,4 +126,33 @@ body {
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+
+  /* ── Halos boutique (cadres premium) ────────────────────── */
+  .frame-glow-platine {
+    box-shadow:
+      0 0 22px rgba(229, 228, 226, 0.65),
+      0 0 48px rgba(186, 196, 200, 0.4),
+      0 0 80px rgba(173, 216, 230, 0.25);
+  }
+
+  /* ── Halos boutique (badges, intensité croissante) ──────── */
+  .glow-badge-bronze {
+    filter: drop-shadow(0 0 6px rgba(180, 83, 9, 0.55));
+  }
+  .glow-badge-silver {
+    filter:
+      drop-shadow(0 0 8px rgba(209, 213, 219, 0.75))
+      drop-shadow(0 0 14px rgba(209, 213, 219, 0.35));
+  }
+  .glow-badge-gold {
+    filter:
+      drop-shadow(0 0 10px rgba(250, 204, 21, 0.8))
+      drop-shadow(0 0 20px rgba(250, 204, 21, 0.45));
+  }
+  .glow-badge-platine {
+    filter:
+      drop-shadow(0 0 12px rgba(229, 228, 226, 0.95))
+      drop-shadow(0 0 24px rgba(173, 216, 230, 0.7))
+      drop-shadow(0 0 40px rgba(186, 196, 200, 0.45));
+  }
 }

@@ -7,8 +7,10 @@ import {
   Users,
   Sparkles,
   ListChecks,
+  Flag,
 } from "lucide-react";
 import { QuizTabs } from "@/components/quiz/quiz-tabs";
+import { RecentSessionsLive } from "@/components/quiz/recent-sessions";
 import { countByTheme } from "@/lib/quiz/seed-questions";
 import {
   QUIZ_QUESTION_COUNT,
@@ -65,6 +67,14 @@ const THEMES = [
     desc: "Mascottes, ballons, organisation",
     icon: Brain,
     gradient: "from-purple-600 to-pink-600",
+  },
+  {
+    id: "france",
+    label: "Équipe de France",
+    desc: "Les Bleus en CDM, de 1998 à 2022",
+    icon: Flag,
+    gradient: "from-blue-700 via-white to-red-600",
+    badge: "Spécial",
   },
 ] as const;
 
@@ -147,6 +157,11 @@ export default function QuizHubPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Dernières parties — chargement client */}
+      <div className="mt-12">
+        <RecentSessionsLive />
       </div>
     </div>
   );

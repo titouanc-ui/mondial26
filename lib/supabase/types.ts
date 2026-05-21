@@ -4,6 +4,7 @@ export type QuizTheme =
   | "historique"
   | "matchs"
   | "culture"
+  | "france"
   | "mix";
 
 export interface QuizAnswer {
@@ -63,9 +64,26 @@ export interface LeaderboardEntry {
   profile_id: string;
   pseudo: string;
   is_verified: boolean;
+  avatar_url: string | null;
+  equipped_frame: string | null;
+  equipped_badge: string | null;
   best_score: number;
   games_played: number;
   last_played: string;
+}
+
+export interface RecentSessionEntry {
+  session_id: string;
+  score: number;
+  correct_count: number;
+  theme: string;
+  played_at: string;
+  profile_id: string;
+  pseudo: string;
+  is_verified: boolean;
+  avatar_url: string | null;
+  equipped_frame: string | null;
+  equipped_badge: string | null;
 }
 
 export interface Database {

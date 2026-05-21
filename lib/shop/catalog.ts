@@ -39,6 +39,8 @@ export interface BadgeItem extends BaseItem {
   tier: "bronze" | "silver" | "gold" | "platinum";
   /** Couleur du checkmark vérifié */
   color: string;
+  /** Classe CSS qui ajoute un drop-shadow de halo (utilitaires dans globals.css). */
+  glowClass?: string;
 }
 
 export interface IconItem extends BaseItem {
@@ -132,7 +134,7 @@ export const FRAMES: FrameItem[] = [
     price: 3000,
     rarity: "legendary",
     className:
-      "border-[3px] border-transparent [background:linear-gradient(theme(colors.bg-card),theme(colors.bg-card))_padding-box,linear-gradient(135deg,#e5e4e2,#a8a8a8,#e5e4e2)_border-box] shadow-2xl shadow-cyan-500/30",
+      "border-4 border-[#e5e4e2] ring-2 ring-cyan-200/30 frame-glow-platine",
     ringColor: "#e5e4e2",
   },
 ];
@@ -160,6 +162,7 @@ export const BADGES: BadgeItem[] = [
     rarity: "rare",
     tier: "bronze",
     color: "#b45309",
+    glowClass: "glow-badge-bronze",
   },
   {
     id: "badge-argent",
@@ -170,6 +173,7 @@ export const BADGES: BadgeItem[] = [
     rarity: "epic",
     tier: "silver",
     color: "#d1d5db",
+    glowClass: "glow-badge-silver",
   },
   {
     id: "badge-or",
@@ -180,6 +184,7 @@ export const BADGES: BadgeItem[] = [
     rarity: "epic",
     tier: "gold",
     color: "#facc15",
+    glowClass: "glow-badge-gold",
   },
   {
     id: "badge-platine",
@@ -190,6 +195,7 @@ export const BADGES: BadgeItem[] = [
     rarity: "legendary",
     tier: "platinum",
     color: "#e5e4e2",
+    glowClass: "glow-badge-platine",
   },
 ];
 

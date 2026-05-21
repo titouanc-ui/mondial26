@@ -36,6 +36,12 @@ export const NEWS_SOURCES: NewsSource[] = [
     url: "https://www.francebleu.fr/rss/sport/foot.xml",
     faviconColor: "#0066b3",
   },
+  {
+    id: "lemonde",
+    name: "Le Monde Sport",
+    url: "https://www.lemonde.fr/sport/rss_full.xml",
+    faviconColor: "#0a3c8e",
+  },
 ];
 
 // Filtres pour ne garder que les news pertinentes au Mondial 2026
