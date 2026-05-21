@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Brain, BadgeCheck } from "lucide-react";
+import { Brain, BadgeCheck, CheckCircle2 } from "lucide-react";
 import {
   getSupabaseServer,
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { GoogleSignInButton } from "@/components/auth/google-button";
+import { LogoutButton } from "@/components/auth/logout-button";
 import type { LeaderboardEntry } from "@/lib/supabase/types";
 import type { Metadata } from "next";
 
@@ -36,8 +37,41 @@ async function loadLeaderboard(): Promise<LeaderboardEntry[]> {
   }
 }
 
+async function loadCurrentUser(): Promise<{
+  authed: boolean;
+  pseudo: string | null;
+}> {
+  if (!isSupabaseConfigured()) return { authed: false, pseudo: null };
+  try {
+    const supabase = await getSupabaseServer();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { authed: false, pseudo: null };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("pseudo")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const pseudo =
+      (profile as { pseudo?: string } | null)?.pseudo ??
+      (user.user_metadata?.full_name as string | undefined) ??
+      (user.email?.split("@")[0] ?? null);
+
+    return { authed: true, pseudo };
+  } catch (err) {
+    console.error("[current-user]", err);
+    return { authed: false, pseudo: null };
+  }
+}
+
 export default async function LeaderboardPage() {
-  const initial = await loadLeaderboard();
+  const [initial, currentUser] = await Promise.all([
+    loadLeaderboard(),
+    loadCurrentUser(),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -62,22 +96,45 @@ export default async function LeaderboardPage() {
         <LeaderboardTable initial={initial} />
 
         <aside className="space-y-4">
-          <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-blue/10 via-bg-card/60 to-bg-card p-5">
-            <div className="flex items-center gap-2">
-              <BadgeCheck className="h-4 w-4 text-accent-blue" />
-              <h2 className="font-bold">Compte vérifié</h2>
+          {currentUser.authed ? (
+            <div className="rounded-2xl border border-accent-blue/30 bg-gradient-to-br from-accent-blue/10 via-bg-card/60 to-bg-card p-5">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-accent-blue" />
+                <h2 className="font-bold">Compte vérifié</h2>
+              </div>
+              <p className="mt-2 text-sm">
+                Connecté en tant que{" "}
+                <span className="font-semibold text-text">
+                  {currentUser.pseudo ?? "toi"}
+                </span>
+                <BadgeCheck className="inline h-3.5 w-3.5 ml-1 text-accent-blue" />
+              </p>
+              <p className="mt-1 text-xs text-text-muted">
+                Tes prochains scores apparaîtront avec ton badge vérifié dans
+                le classement.
+              </p>
+              <div className="mt-4">
+                <LogoutButton />
+              </div>
             </div>
-            <p className="mt-2 text-sm text-text-muted">
-              Connecte-toi avec Google pour ajouter un badge vérifié à ton
-              pseudo et accumuler des points pour la boutique (bientôt).
-            </p>
-            <div className="mt-4">
-              <GoogleSignInButton
-                next="/classement-joueurs"
-                label="Se connecter avec Google"
-              />
+          ) : (
+            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-blue/10 via-bg-card/60 to-bg-card p-5">
+              <div className="flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 text-accent-blue" />
+                <h2 className="font-bold">Compte vérifié</h2>
+              </div>
+              <p className="mt-2 text-sm text-text-muted">
+                Connecte-toi avec Google pour ajouter un badge vérifié à ton
+                pseudo et accumuler des points pour la boutique (bientôt).
+              </p>
+              <div className="mt-4">
+                <GoogleSignInButton
+                  next="/classement-joueurs"
+                  label="Se connecter avec Google"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="rounded-2xl border border-border bg-bg-card/40 p-5 text-xs text-text-muted">
             <h3 className="text-sm font-bold text-text mb-2">Règles</h3>
