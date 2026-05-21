@@ -9,11 +9,15 @@ interface Props {
   frameId?: string | null;
   /** Code ISO 3 lettres de l'équipe favorite (FRA, BRA, ...). Affiché en bas-droite. */
   favoriteTeam?: string | null;
-  /** Id d'icône cosmétique équipée. Affichée en bas-gauche (large only). */
+  /** Id d'icône cosmétique équipée. Affichée en bas-gauche. */
   iconId?: string | null;
   /** Taille en px (carré). Par défaut 112 (page profil). */
   size?: number;
   className?: string;
+  /** Si true, ne pas afficher l'icône équipée (la place est prise par le bouton appareil photo). */
+  hideIcon?: boolean;
+  /** Si true, ne pas afficher le drapeau (utile quand le drapeau est rendu inline ailleurs). */
+  hideFlag?: boolean;
 }
 
 /**
@@ -31,6 +35,8 @@ export function ProfileAvatar({
   iconId,
   size = 112,
   className,
+  hideIcon = false,
+  hideFlag = false,
 }: Props) {
   const frame = getFrame(frameId);
   const frameClass = frame?.className ?? "border-2 border-border";
@@ -47,10 +53,12 @@ export function ProfileAvatar({
 
   const fontSize = size < 48 ? "text-xs" : size < 80 ? "text-base" : "text-2xl";
 
-  // Taille des badges de flair, ~35% de l'avatar (min 22px pour rester lisible)
+  // Taille des badges de flair (icône en bas-gauche)
   const flairSize = Math.max(22, Math.round(size * 0.34));
   const flairFont = Math.max(11, Math.round(flairSize * 0.62));
-  const showFlairs = size >= 64;
+  const showIconFlair = !hideIcon && size >= 64;
+  // Drapeau : juste l'emoji avec ombre, plus simple à voir + scale-friendly
+  const flagFontSize = Math.max(14, Math.round(size * 0.4));
 
   return (
     <div
@@ -85,37 +93,25 @@ export function ProfileAvatar({
         )}
       </div>
 
-      {/* Flair drapeau équipe favorite (bas-droite) */}
-      {showFlairs && team && (
-        <div
-          className="absolute rounded-full bg-bg-card border-2 border-bg flex items-center justify-center shadow-md overflow-hidden"
+      {/* Drapeau équipe favorite (bas-droite) — juste l'emoji, sans cercle */}
+      {!hideFlag && team && (
+        <span
+          className="absolute select-none pointer-events-none leading-none"
           style={{
-            width: flairSize,
-            height: flairSize,
-            bottom: -2,
-            right: -2,
-            fontSize: flairFont,
-            lineHeight: 1,
+            bottom: -Math.round(flagFontSize * 0.08),
+            right: -Math.round(flagFontSize * 0.08),
+            fontSize: flagFontSize,
+            filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.6))",
           }}
           title={team.name}
           aria-label={`Équipe favorite : ${team.name}`}
         >
-          {/* L'emoji drapeau est rendu à l'échelle pour remplir le cercle */}
-          <span
-            className="block select-none"
-            style={{
-              fontSize: flairSize * 0.95,
-              lineHeight: 1,
-              transform: "translateY(1px)",
-            }}
-          >
-            {team.flag}
-          </span>
-        </div>
+          {team.flag}
+        </span>
       )}
 
       {/* Flair icône équipée (bas-gauche) */}
-      {showFlairs && icon && (
+      {showIconFlair && icon && (
         <div
           className="absolute rounded-full border-2 border-bg flex items-center justify-center shadow-md"
           style={{

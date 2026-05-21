@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { BadgeCheck, History, Loader2 } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { PlayerProfileModal } from "@/components/profile/player-profile-modal";
 import { getBadge } from "@/lib/shop/catalog";
+import { getTeam } from "@/lib/teams";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import type { RecentSessionEntry } from "@/lib/supabase/types";
 
@@ -32,6 +34,7 @@ export function RecentSessionsLive({
   title = "Dernières parties",
 }: Props) {
   const [entries, setEntries] = useState<RecentSessionEntry[] | null>(null);
+  const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -92,20 +95,31 @@ export function RecentSessionsLive({
             const badge = getBadge(e.equipped_badge);
             const badgeColor = badge?.color ?? "#0033a0";
             const badgeGlow = badge?.glowClass ?? "";
+            const team = getTeam(e.favorite_team);
             return (
               <li
                 key={e.session_id}
-                className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-bg-card-hover/40 transition-colors"
+                onClick={() => setOpenProfileId(e.profile_id)}
+                className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-bg-card-hover/40 transition-colors cursor-pointer"
               >
                 <ProfileAvatar
                   avatarUrl={e.avatar_url}
                   pseudo={e.pseudo}
                   frameId={e.equipped_frame}
                   size={36}
+                  hideFlag
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 font-medium text-sm truncate">
                     <span className="truncate">{e.pseudo}</span>
+                    {team && (
+                      <span
+                        className="text-base leading-none shrink-0"
+                        title={team.name}
+                      >
+                        {team.flag}
+                      </span>
+                    )}
                     {e.is_verified && (
                       <BadgeCheck
                         className={cn("h-3.5 w-3.5 shrink-0", badgeGlow)}
@@ -131,6 +145,13 @@ export function RecentSessionsLive({
             );
           })}
         </ul>
+      )}
+
+      {openProfileId && (
+        <PlayerProfileModal
+          profileId={openProfileId}
+          onClose={() => setOpenProfileId(null)}
+        />
       )}
     </section>
   );

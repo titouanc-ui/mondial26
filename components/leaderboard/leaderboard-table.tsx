@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { BadgeCheck, Crown, Medal, Trophy } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { PlayerProfileModal } from "@/components/profile/player-profile-modal";
 import { getBadge } from "@/lib/shop/catalog";
+import { getTeam } from "@/lib/teams";
 import type { LeaderboardEntry } from "@/lib/supabase/types";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
@@ -34,6 +36,7 @@ const RANK_DECORATION = (rank: number) => {
  */
 export function LeaderboardTable() {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
+  const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -87,6 +90,7 @@ export function LeaderboardTable() {
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-2xl border border-border bg-bg-card/60">
       <table className="w-full text-sm">
         <thead>
@@ -111,11 +115,13 @@ export function LeaderboardTable() {
             const badge = getBadge(e.equipped_badge);
             const badgeColor = badge?.color ?? "#0033a0";
             const badgeGlow = badge?.glowClass ?? "";
+            const team = getTeam(e.favorite_team);
             return (
               <tr
                 key={e.profile_id}
+                onClick={() => setOpenProfileId(e.profile_id)}
                 className={cn(
-                  "border-t border-border/40 transition-colors hover:bg-bg-card-hover/40",
+                  "border-t border-border/40 transition-colors hover:bg-bg-card-hover/40 cursor-pointer",
                   deco.bg && `bg-gradient-to-r ${deco.bg}`,
                 )}
               >
@@ -132,8 +138,17 @@ export function LeaderboardTable() {
                       pseudo={e.pseudo}
                       frameId={e.equipped_frame}
                       size={32}
+                      hideFlag
                     />
                     <span className="truncate">{e.pseudo}</span>
+                    {team && (
+                      <span
+                        className="text-base leading-none shrink-0"
+                        title={team.name}
+                      >
+                        {team.flag}
+                      </span>
+                    )}
                     {e.is_verified && (
                       <span
                         title="Compte vérifié"
@@ -163,6 +178,14 @@ export function LeaderboardTable() {
         </tbody>
       </table>
     </div>
+
+    {openProfileId && (
+      <PlayerProfileModal
+        profileId={openProfileId}
+        onClose={() => setOpenProfileId(null)}
+      />
+    )}
+    </>
   );
 }
 

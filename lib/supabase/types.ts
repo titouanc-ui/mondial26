@@ -65,6 +65,7 @@ export interface LeaderboardEntry {
   pseudo: string;
   is_verified: boolean;
   avatar_url: string | null;
+  favorite_team: string | null;
   equipped_frame: string | null;
   equipped_badge: string | null;
   best_score: number;
@@ -82,6 +83,7 @@ export interface RecentSessionEntry {
   pseudo: string;
   is_verified: boolean;
   avatar_url: string | null;
+  favorite_team: string | null;
   equipped_frame: string | null;
   equipped_badge: string | null;
 }

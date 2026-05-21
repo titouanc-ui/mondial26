@@ -20,6 +20,7 @@ interface MiniProfile {
   pseudo: string;
   coins: number;
   avatar_url: string | null;
+  favorite_team: string | null;
   equipped_frame: string | null;
   equipped_banner: string | null;
 }
@@ -44,7 +45,7 @@ export function Header() {
     setAuthed(true);
     const { data } = await supabase
       .from("profiles")
-      .select("pseudo, coins, avatar_url, equipped_frame, equipped_banner")
+      .select("pseudo, coins, avatar_url, favorite_team, equipped_frame, equipped_banner")
       .eq("user_id", user.id)
       .maybeSingle();
     if (data) {
@@ -179,6 +180,7 @@ export function Header() {
                   avatarUrl={profile.avatar_url}
                   pseudo={profile.pseudo}
                   frameId={profile.equipped_frame}
+                  favoriteTeam={profile.favorite_team}
                   size={28}
                   className="!border-2"
                 />

@@ -120,7 +120,9 @@ export function ProfileForm({ profile, teams }: Props) {
       {/* Carte avatar + pseudo */}
       <div className="rounded-2xl border border-border bg-bg-card/40 p-6">
         <div className="flex flex-col sm:flex-row gap-6 items-start">
-          {/* Avatar (avec cadre équipé) */}
+          {/* Avatar (avec cadre équipé)
+              Note : on cache l'icône équipée ici car le bouton appareil photo
+              occupe le bas-gauche. Elle reste visible partout ailleurs. */}
           <div className="relative">
             <div className="relative">
               <ProfileAvatar
@@ -130,6 +132,7 @@ export function ProfileForm({ profile, teams }: Props) {
                 favoriteTeam={favoriteTeam}
                 iconId={profile.equipped_icon}
                 size={112}
+                hideIcon
               />
               {uploadingAvatar && (
                 <div className="absolute inset-0 rounded-full bg-bg/80 flex items-center justify-center">
@@ -141,7 +144,7 @@ export function ProfileForm({ profile, teams }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-accent-red text-white flex items-center justify-center hover:bg-accent-red-hover transition-colors shadow-lg disabled:opacity-50"
+              className="absolute -bottom-1 -left-1 h-9 w-9 rounded-full bg-accent-red text-white flex items-center justify-center hover:bg-accent-red-hover transition-colors shadow-lg disabled:opacity-50 z-10"
               aria-label="Changer ma photo"
             >
               <Camera className="h-4 w-4" />
