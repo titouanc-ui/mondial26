@@ -90,10 +90,26 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 text-xs text-text-dim">
-          Mondial 26 n'est pas affilié à la FIFA. Les actualités sont issues
-          des flux publics des médias référencés. Les données de matchs
-          proviennent de fournisseurs tiers.
+        <div className="mt-10 border-t border-border pt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between text-xs text-text-dim">
+          <p>
+            Mondial 26 n'est pas affilié à la FIFA. Les actualités sont issues
+            des flux publics des médias référencés. Les données de matchs
+            proviennent de fournisseurs tiers.
+          </p>
+          <nav className="flex gap-4 shrink-0">
+            <Link
+              href="/confidentialite"
+              className="hover:text-text transition-colors whitespace-nowrap"
+            >
+              Confidentialité
+            </Link>
+            <Link
+              href="/conditions"
+              className="hover:text-text transition-colors whitespace-nowrap"
+            >
+              Conditions
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>
