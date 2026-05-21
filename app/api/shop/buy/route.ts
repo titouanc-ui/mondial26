@@ -103,7 +103,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Fonds suffisants ?
+  // Pré-check rapide pour un message d'erreur clair (la décision atomique
+  // est faite par spend_coins ci-dessous — pas de TOCTOU possible).
   if (profile.coins < item.price) {
     return NextResponse.json(
       { error: `Il te manque ${item.price - profile.coins} Buts.` },
@@ -111,20 +112,26 @@ export async function POST(req: Request) {
     );
   }
 
-  // Transaction : débit coins + ajout inventory
-  // (Pas de transaction atomique côté Supabase JS — on séquence, on rollback si besoin.)
-  const newCoins = profile.coins - item.price;
-  const { error: updErr } = await admin
-    .from("profiles")
-    .update({ coins: newCoins })
-    .eq("id", profile.id);
-  if (updErr) {
-    console.error("[shop/buy] coin update failed", updErr);
+  // Débit atomique via RPC : la fonction n'opère que si coins >= price,
+  // sinon elle lève 'insufficient_funds'. Plus aucun risque de double-spend.
+  const { data: newCoinsRaw, error: spendErr } = await admin.rpc("spend_coins", {
+    p_profile_id: profile.id,
+    p_amount: item.price,
+  });
+  if (spendErr) {
+    if (spendErr.message?.includes("insufficient_funds")) {
+      return NextResponse.json(
+        { error: `Il te manque ${item.price - profile.coins} Buts.` },
+        { status: 402 },
+      );
+    }
+    console.error("[shop/buy] spend_coins failed", spendErr);
     return NextResponse.json(
       { error: "Échec du débit, réessaie." },
       { status: 500 },
     );
   }
+  const newCoins = (newCoinsRaw as number) ?? profile.coins - item.price;
 
   const { error: invErr } = await admin.from("user_inventory").insert({
     profile_id: profile.id,
@@ -132,11 +139,13 @@ export async function POST(req: Request) {
     item_type: item.type,
   });
   if (invErr) {
-    // Rollback : on remet les coins
-    await admin
-      .from("profiles")
-      .update({ coins: profile.coins })
-      .eq("id", profile.id);
+    // Rollback : on recrédite atomiquement.
+    await admin.rpc("credit_coins", {
+      p_profile_id: profile.id,
+      p_coins_delta: item.price,
+      p_points_delta: 0,
+      p_earned_delta: 0,
+    });
     console.error("[shop/buy] inventory insert failed", invErr);
     return NextResponse.json(
       { error: "Échec de l'achat, fonds restaurés." },

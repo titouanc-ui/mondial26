@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BadgeCheck, Crown, Medal, Trophy } from "lucide-react";
-import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useState } from "react";
+import { Crown, Medal, Trophy } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { PlayerProfileModal } from "@/components/profile/player-profile-modal";
-import { getBadge } from "@/lib/shop/catalog";
-import { getTeam } from "@/lib/teams";
+import { VerifiedPseudo } from "@/components/player/verified-pseudo";
+import { useRealtimeList } from "@/lib/hooks/use-realtime-list";
 import type { LeaderboardEntry } from "@/lib/supabase/types";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
@@ -33,46 +32,26 @@ const RANK_DECORATION = (rank: number) => {
  * LeaderboardTable charge ses propres données côté client pour que la page
  * s'affiche instantanément (la requête Supabase server-side ralentissait
  * la TTFB de plusieurs secondes).
+ *
+ * Realtime debouncé (2 sec) : si plusieurs sessions sont insérées coup sur
+ * coup (soir de quiz à plusieurs), on ne refait qu'un seul refetch.
  */
 export function LeaderboardTable() {
-  const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setEntries([]);
-      return;
-    }
-
-    const supabase = getSupabaseBrowser();
-    let cancelled = false;
-
-    const fetchEntries = async () => {
-      const { data } = await supabase
+  const entries = useRealtimeList<LeaderboardEntry>({
+    channelName: "leaderboard",
+    watchTable: "quiz_sessions",
+    fetcher: (supabase) =>
+      supabase
         .from("leaderboard_global")
-        .select("*")
-        .limit(50);
-      if (!cancelled) setEntries((data as LeaderboardEntry[]) ?? []);
-    };
-
-    void fetchEntries();
-
-    const channel = supabase
-      .channel("leaderboard")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "quiz_sessions" },
-        () => {
-          void fetchEntries();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, []);
+        .select(
+          "profile_id, pseudo, is_verified, avatar_url, favorite_team, equipped_frame, equipped_badge, best_score, games_played, last_played",
+        )
+        .order("best_score", { ascending: false })
+        .order("last_played", { ascending: false })
+        .limit(50),
+  });
 
   if (entries === null) {
     return <LeaderboardSkeleton />;
@@ -112,10 +91,6 @@ export function LeaderboardTable() {
           {entries.map((e, i) => {
             const rank = i + 1;
             const deco = RANK_DECORATION(rank);
-            const badge = getBadge(e.equipped_badge);
-            const badgeColor = badge?.color ?? "#4a8fff";
-            const badgeGlow = badge?.glowClass ?? "";
-            const team = getTeam(e.favorite_team);
             return (
               <tr
                 key={e.profile_id}
@@ -132,7 +107,7 @@ export function LeaderboardTable() {
                   </div>
                 </td>
                 <td className="px-3 py-3">
-                  <div className="flex items-center gap-2.5 font-medium">
+                  <div className="flex items-center gap-2.5 font-medium min-w-0">
                     <ProfileAvatar
                       avatarUrl={e.avatar_url}
                       pseudo={e.pseudo}
@@ -140,27 +115,13 @@ export function LeaderboardTable() {
                       size={32}
                       hideFlag
                     />
-                    <span className="truncate">{e.pseudo}</span>
-                    {team && (
-                      <span
-                        className="text-base leading-none shrink-0"
-                        title={team.name}
-                      >
-                        {team.flag}
-                      </span>
-                    )}
-                    {e.is_verified && (
-                      <span
-                        title="Compte vérifié"
-                        className="inline-flex items-center"
-                      >
-                        <BadgeCheck
-                          className={cn("h-4 w-4 shrink-0", badgeGlow)}
-                          style={{ color: badgeColor }}
-                          strokeWidth={2.2}
-                        />
-                      </span>
-                    )}
+                    <VerifiedPseudo
+                      pseudo={e.pseudo}
+                      isVerified={e.is_verified}
+                      equippedBadge={e.equipped_badge}
+                      favoriteTeam={e.favorite_team}
+                      size="md"
+                    />
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center tabular hidden sm:table-cell text-text-muted">

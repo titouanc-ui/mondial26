@@ -231,7 +231,7 @@ function teamGradient(code: string): string {
   };
   return (
     palette[code] ??
-    "linear-gradient(135deg,#0033a0 0%,#141a2e 50%,#c8102e 100%)"
+    "linear-gradient(135deg,#4a8fff 0%,#141a2e 50%,#c8102e 100%)"
   );
 }
 
@@ -248,7 +248,7 @@ export const BANNERS: BannerItem[] = [
     description: "Le look maison.",
     price: 0,
     rarity: "common",
-    gradient: "linear-gradient(135deg,#0033a0 0%,#141a2e 50%,#c8102e 100%)",
+    gradient: "linear-gradient(135deg,#4a8fff 0%,#141a2e 50%,#c8102e 100%)",
   },
   ...BANNER_TEAMS.map((code): BannerItem => {
     const team = TEAMS.find((t) => t.code === code);
@@ -275,7 +275,7 @@ export const BANNERS: BannerItem[] = [
 // Dégradés réutilisables selon la rareté visuelle
 const GRAD = {
   slate: "linear-gradient(135deg,#1c2434,#3a4866)",
-  blue: "linear-gradient(135deg,#0033a0,#3b6dd4)",
+  blue: "linear-gradient(135deg,#4a8fff,#1c4dbf)",
   red: "linear-gradient(135deg,#c8102e,#e0264a)",
   green: "linear-gradient(135deg,#006847,#10b981)",
   gold: "linear-gradient(135deg,#d4af37,#facc15)",
@@ -331,7 +331,7 @@ export const ICONS: IconItem[] = [
 // ============================================================
 // Accès par id (utilisé partout pour résoudre un slot équipé)
 // ============================================================
-export const ALL_ITEMS: ShopItem[] = [
+const ALL_ITEMS: ShopItem[] = [
   ...FRAMES,
   ...BADGES,
   ...BANNERS,
@@ -379,7 +379,7 @@ export const RARITY_STYLE: Record<Rarity, { label: string; className: string }> 
 // PROGRESSIONS — paliers séquentiels (chaque palier débloque le suivant)
 // L'item "default" (gratuit) n'est pas dans la séquence.
 // ============================================================
-export const FRAME_PROGRESSION: string[] = [
+const FRAME_PROGRESSION: string[] = [
   "frame-bois",
   "frame-pierre",
   "frame-fer",
@@ -389,7 +389,7 @@ export const FRAME_PROGRESSION: string[] = [
   "frame-platine",
 ];
 
-export const BADGE_PROGRESSION: string[] = [
+const BADGE_PROGRESSION: string[] = [
   "badge-bronze",
   "badge-argent",
   "badge-or",
@@ -400,20 +400,6 @@ const PROGRESSIONS_BY_TYPE: Partial<Record<ItemType, string[]>> = {
   frame: FRAME_PROGRESSION,
   badge: BADGE_PROGRESSION,
 };
-
-/**
- * Renvoie l'id du palier qu'il faut posséder avant d'acheter `itemId`.
- * `null` si c'est le 1er palier, ou si l'item n'est pas dans une progression.
- */
-export function getRequiredPredecessor(itemId: string): string | null {
-  for (const seq of Object.values(PROGRESSIONS_BY_TYPE)) {
-    if (!seq) continue;
-    const idx = seq.indexOf(itemId);
-    if (idx > 0) return seq[idx - 1];
-    if (idx === 0) return null;
-  }
-  return null;
-}
 
 /**
  * Liste les paliers manquants à acheter avant `itemId` (progression complète requise).

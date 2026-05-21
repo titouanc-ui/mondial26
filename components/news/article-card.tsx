@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { Article } from "@/lib/news/types";
 import { formatRelativeTime } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -19,6 +20,12 @@ function trackArticleClick() {
   );
 }
 
+// Les URLs d'images RSS proviennent de N CDN différents (lequipe.fr, rmcsport,
+// sofoot, footmercato, lemonde, et leurs CDN). On ne peut pas raisonnablement
+// whitelist chaque domaine dans `next.config.ts` → `unoptimized: true`. On
+// garde quand même `next/image` pour le lazy loading natif + dimensions
+// (évite le CLS) + decoding async. Bien meilleur que `background-image: url()`.
+
 export function ArticleCard({ article, featured }: ArticleCardProps) {
   if (featured) {
     return (
@@ -30,11 +37,17 @@ export function ArticleCard({ article, featured }: ArticleCardProps) {
         className="group relative block overflow-hidden rounded-2xl border border-border bg-bg-card hover:border-border-strong transition-all"
       >
         {article.imageUrl ? (
-          <div
-            className="aspect-[16/9] bg-bg-elevated bg-cover bg-center"
-            style={{ backgroundImage: `url(${article.imageUrl})` }}
-          >
-            <div className="h-full w-full bg-gradient-to-t from-bg-card via-bg-card/30 to-transparent" />
+          <div className="relative aspect-[16/9] bg-bg-elevated overflow-hidden">
+            <Image
+              src={article.imageUrl}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+              unoptimized
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-bg-card/30 to-transparent" />
           </div>
         ) : (
           <div className="aspect-[16/9] bg-gradient-to-br from-accent-blue/30 to-accent-red/20" />
@@ -67,10 +80,17 @@ export function ArticleCard({ article, featured }: ArticleCardProps) {
       className="group flex gap-4 rounded-xl border border-border bg-bg-card/60 p-4 hover:border-border-strong hover:bg-bg-card transition-all"
     >
       {article.imageUrl && (
-        <div
-          className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 rounded-lg bg-bg-elevated bg-cover bg-center"
-          style={{ backgroundImage: `url(${article.imageUrl})` }}
-        />
+        <div className="relative h-20 w-20 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-lg bg-bg-elevated">
+          <Image
+            src={article.imageUrl}
+            alt=""
+            fill
+            sizes="96px"
+            className="object-cover"
+            unoptimized
+            loading="lazy"
+          />
+        </div>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-xs text-text-muted">

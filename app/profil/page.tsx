@@ -34,15 +34,19 @@ async function loadStats(profileId: string): Promise<ProfileStats> {
     return { bestScore: 0, gamesPlayed: 0, totalCorrect: 0 };
   }
   const admin = getSupabaseAdmin();
+  // Une seule requête sur la vue agrégée — plus de fetch des N sessions.
   const { data } = await admin
-    .from("quiz_sessions")
-    .select("score, correct_count")
-    .eq("profile_id", profileId);
-  const rows = (data ?? []) as { score: number; correct_count: number }[];
+    .from("profile_stats")
+    .select("best_score, games_played, total_correct")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  const row = data as
+    | { best_score: number; games_played: number; total_correct: number }
+    | null;
   return {
-    bestScore: rows.reduce((m, r) => Math.max(m, r.score), 0),
-    gamesPlayed: rows.length,
-    totalCorrect: rows.reduce((s, r) => s + r.correct_count, 0),
+    bestScore: row?.best_score ?? 0,
+    gamesPlayed: row?.games_played ?? 0,
+    totalCorrect: row?.total_correct ?? 0,
   };
 }
 

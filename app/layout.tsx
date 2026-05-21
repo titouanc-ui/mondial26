@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://mondial26-stat.vercel.app",
+  ),
   title: {
     default: "Mondial 26 — Tout le Mondial 2026 entre potes",
     template: "%s · Mondial 26",
@@ -38,6 +41,13 @@ export const metadata: Metadata = {
       "News, stats live, classements et quiz sur la Coupe du Monde 2026.",
     type: "website",
     locale: "fr_FR",
+    siteName: "Mondial 26",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mondial 26 — Tout le Mondial 2026 entre potes",
+    description:
+      "News, stats live, classements et quiz sur la Coupe du Monde 2026.",
   },
 };
 

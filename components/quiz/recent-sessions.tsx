@@ -1,24 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BadgeCheck, History, Loader2 } from "lucide-react";
-import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useState } from "react";
+import { History, Loader2 } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { PlayerProfileModal } from "@/components/profile/player-profile-modal";
-import { getBadge } from "@/lib/shop/catalog";
-import { getTeam } from "@/lib/teams";
-import { cn, formatRelativeTime } from "@/lib/utils";
-import type { RecentSessionEntry } from "@/lib/supabase/types";
-
-const THEME_LABEL: Record<string, string> = {
-  historique: "Histoire",
-  equipes: "Équipes",
-  joueurs: "Joueurs",
-  matchs: "Matchs",
-  culture: "Culture",
-  france: "France",
-  mix: "Mix",
-};
+import { VerifiedPseudo } from "@/components/player/verified-pseudo";
+import { useRealtimeList } from "@/lib/hooks/use-realtime-list";
+import { formatRelativeTime } from "@/lib/utils";
+import { THEME_LABEL_SHORT } from "@/lib/quiz/themes";
+import type {
+  QuizTheme,
+  RecentSessionEntry,
+} from "@/lib/supabase/types";
 
 interface Props {
   limit?: number;
@@ -28,50 +21,27 @@ interface Props {
 /**
  * Affiche les N dernières parties jouées tous joueurs confondus,
  * avec avatar (cadre + badge équipés). Chargement client-side.
+ *
+ * Realtime debouncé via `useRealtimeList` — pas de spam de refetch.
  */
 export function RecentSessionsLive({
   limit = 10,
   title = "Dernières parties",
 }: Props) {
-  const [entries, setEntries] = useState<RecentSessionEntry[] | null>(null);
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setEntries([]);
-      return;
-    }
-    const supabase = getSupabaseBrowser();
-    let cancelled = false;
-
-    const fetchData = async () => {
-      const { data } = await supabase
+  const entries = useRealtimeList<RecentSessionEntry>({
+    channelName: `recent-sessions-${limit}`,
+    watchTable: "quiz_sessions",
+    fetcher: (supabase) =>
+      supabase
         .from("recent_sessions")
-        .select("*")
+        .select(
+          "session_id, score, correct_count, theme, played_at, profile_id, pseudo, is_verified, avatar_url, favorite_team, equipped_frame, equipped_badge",
+        )
         .order("played_at", { ascending: false })
-        .limit(limit);
-      if (!cancelled) setEntries((data as RecentSessionEntry[]) ?? []);
-    };
-
-    void fetchData();
-
-    // Realtime : nouvelle session insérée → on rafraîchit
-    const channel = supabase
-      .channel("recent-sessions")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "quiz_sessions" },
-        () => {
-          void fetchData();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, [limit]);
+        .limit(limit),
+  });
 
   return (
     <section className="rounded-2xl border border-border bg-bg-card/40 overflow-hidden">
@@ -91,59 +61,43 @@ export function RecentSessionsLive({
         </div>
       ) : (
         <ul className="divide-y divide-border/60">
-          {entries.map((e) => {
-            const badge = getBadge(e.equipped_badge);
-            const badgeColor = badge?.color ?? "#4a8fff";
-            const badgeGlow = badge?.glowClass ?? "";
-            const team = getTeam(e.favorite_team);
-            return (
-              <li
-                key={e.session_id}
-                onClick={() => setOpenProfileId(e.profile_id)}
-                className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-bg-card-hover/40 transition-colors cursor-pointer"
-              >
-                <ProfileAvatar
-                  avatarUrl={e.avatar_url}
+          {entries.map((e) => (
+            <li
+              key={e.session_id}
+              onClick={() => setOpenProfileId(e.profile_id)}
+              className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-bg-card-hover/40 transition-colors cursor-pointer"
+            >
+              <ProfileAvatar
+                avatarUrl={e.avatar_url}
+                pseudo={e.pseudo}
+                frameId={e.equipped_frame}
+                size={36}
+                hideFlag
+              />
+              <div className="flex-1 min-w-0">
+                <VerifiedPseudo
                   pseudo={e.pseudo}
-                  frameId={e.equipped_frame}
-                  size={36}
-                  hideFlag
+                  isVerified={e.is_verified}
+                  equippedBadge={e.equipped_badge}
+                  favoriteTeam={e.favorite_team}
+                  size="sm"
+                  className="font-medium text-sm"
                 />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 font-medium text-sm truncate">
-                    <span className="truncate">{e.pseudo}</span>
-                    {team && (
-                      <span
-                        className="text-base leading-none shrink-0"
-                        title={team.name}
-                      >
-                        {team.flag}
-                      </span>
-                    )}
-                    {e.is_verified && (
-                      <BadgeCheck
-                        className={cn("h-3.5 w-3.5 shrink-0", badgeGlow)}
-                        style={{ color: badgeColor }}
-                        strokeWidth={2.2}
-                      />
-                    )}
-                  </div>
-                  <div className="text-xs text-text-dim">
-                    {THEME_LABEL[e.theme] ?? e.theme} ·{" "}
-                    {formatRelativeTime(e.played_at)}
-                  </div>
+                <div className="text-xs text-text-dim">
+                  {THEME_LABEL_SHORT[e.theme as QuizTheme] ?? e.theme} ·{" "}
+                  {formatRelativeTime(e.played_at)}
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="font-mono tabular font-bold text-accent-red text-base">
-                    {e.score}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider text-text-dim">
-                    {e.correct_count}/10
-                  </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-mono tabular font-bold text-accent-red text-base">
+                  {e.score}
                 </div>
-              </li>
-            );
-          })}
+                <div className="text-[10px] uppercase tracking-wider text-text-dim">
+                  {e.correct_count}/10
+                </div>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
 

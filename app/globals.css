@@ -14,8 +14,8 @@
 
   --accent-red: #c8102e;
   --accent-red-hover: #e0264a;
-  --accent-blue: #0033a0;
-  --accent-blue-hover: #1c4dbf;
+  --accent-blue: #4a8fff;
+  --accent-blue-hover: #6ba5ff;
   --accent-green: #006847;
   --accent-green-hover: #008a5c;
   --accent-gold: #d4af37;
@@ -66,7 +66,7 @@ body {
   background:
     radial-gradient(
       ellipse at top,
-      rgba(0, 51, 160, 0.12) 0%,
+      rgba(74, 143, 255, 0.12) 0%,
       transparent 50%
     ),
     radial-gradient(

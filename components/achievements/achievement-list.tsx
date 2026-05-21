@@ -53,17 +53,35 @@ export function AchievementList() {
     items?.filter((a) => a.unlocked && !a.claimed).reduce((s, a) => s + a.reward, 0) ?? 0;
 
   const handleClaimAll = async () => {
+    if (!items) return;
     setClaiming(true);
     setError(null);
+
+    // Update optimiste : on marque tout de suite les succès débloqués comme
+    // réclamés côté UI, et on affiche le flash sans attendre la réponse.
+    // Si le serveur rejette, on annule.
+    const previousItems = items;
+    const expectedReward = unclaimedReward;
+    setItems(
+      items.map((a) =>
+        a.unlocked && !a.claimed ? { ...a, claimed: true } : a,
+      ),
+    );
+    setFlash(`+${expectedReward} Buts collectés !`);
+
     try {
       const res = await fetch("/api/achievements/claim", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur");
-      setFlash(`+${data.coinsEarned} Buts collectés !`);
+      // Synchro finale avec le serveur (cas où des succès auraient été
+      // débloqués entre-temps par un autre onglet).
       setTimeout(() => setFlash(null), 3000);
       await load();
       router.refresh();
     } catch (err) {
+      // Rollback : on restaure l'état précédent
+      setItems(previousItems);
+      setFlash(null);
       setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setClaiming(false);

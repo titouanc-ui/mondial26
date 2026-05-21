@@ -33,17 +33,13 @@ export async function POST() {
   const admin = getSupabaseAdmin();
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, coins, coins_earned_total")
+    .select("id, coins")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!profile) {
     return NextResponse.json({ error: "Profil introuvable" }, { status: 404 });
   }
-  const p = profile as {
-    id: string;
-    coins: number;
-    coins_earned_total: number;
-  };
+  const p = profile as { id: string; coins: number };
 
   // Succès débloqués + non réclamés
   const { data: claimable } = await admin
@@ -87,13 +83,23 @@ export async function POST() {
     return NextResponse.json({ error: updErr.message }, { status: 500 });
   }
 
-  // Crédite les Buts
-  const newCoins = (p.coins ?? 0) + coinsEarned;
-  const newEarnedTotal = (p.coins_earned_total ?? 0) + coinsEarned;
-  await admin
-    .from("profiles")
-    .update({ coins: newCoins, coins_earned_total: newEarnedTotal })
-    .eq("id", p.id);
+  // Crédite les Buts de façon atomique
+  const { data: creditRow, error: creditErr } = await admin.rpc(
+    "credit_coins",
+    {
+      p_profile_id: p.id,
+      p_coins_delta: coinsEarned,
+      p_points_delta: 0,
+      p_earned_delta: coinsEarned,
+    },
+  );
+  if (creditErr) {
+    console.error("[achievements/claim] credit_coins failed", creditErr);
+    return NextResponse.json({ error: creditErr.message }, { status: 500 });
+  }
+  const credit = Array.isArray(creditRow) ? creditRow[0] : creditRow;
+  const newCoins =
+    (credit as { coins: number } | null)?.coins ?? p.coins + coinsEarned;
 
   return NextResponse.json({
     ok: true,

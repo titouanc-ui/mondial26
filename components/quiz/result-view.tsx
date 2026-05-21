@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getRank, QUIZ_MAX_SCORE } from "@/lib/quiz/scoring";
+import { Toast } from "@/components/ui/toast";
 
 interface QuestionResult {
   questionId: string;
@@ -44,6 +45,9 @@ export function ResultView() {
   const [savingPseudo, setSavingPseudo] = useState(false);
   const [pseudoError, setPseudoError] = useState<string | null>(null);
   const [pseudoSaved, setPseudoSaved] = useState(false);
+  const [toast, setToast] = useState<{ kind: "ok" | "err"; msg: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     const raw =
@@ -88,7 +92,7 @@ export function ResultView() {
     }
     try {
       await navigator.clipboard.writeText(`${text} ${url}`);
-      alert("Texte copié dans le presse-papier !");
+      setToast({ kind: "ok", msg: "Texte copié dans le presse-papier" });
     } catch {
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${text} ${url}`)}`);
     }
@@ -121,6 +125,9 @@ export function ResultView() {
 
   return (
     <div className="space-y-8">
+      {toast && (
+        <Toast {...toast} onClose={() => setToast(null)} />
+      )}
       <div className="rounded-2xl border border-border bg-bg-card/60 p-6 sm:p-10 text-center">
         <div className="text-5xl">{rank.emoji}</div>
         <div className="mt-3 text-xs uppercase tracking-wider text-text-dim">
@@ -215,8 +222,7 @@ export function ResultView() {
               )}
               <p className="mt-3 text-xs text-text-dim">
                 💡 Connecte-toi avec Google pour débloquer un badge vérifié, la
-                boutique à points et l'historique de tes parties (bientôt
-                disponible).
+                boutique à Buts et l'historique de tes parties.
               </p>
             </>
           )}

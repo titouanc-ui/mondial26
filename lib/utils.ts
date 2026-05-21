@@ -5,10 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatNumber(n: number): string {
-  return new Intl.NumberFormat("fr-FR").format(n);
-}
-
 export function formatDate(
   date: Date | string,
   opts: Intl.DateTimeFormatOptions = {

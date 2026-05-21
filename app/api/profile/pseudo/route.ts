@@ -8,6 +8,7 @@ import {
   getCurrentProfileId,
   setCurrentProfileId,
 } from "@/lib/quiz/profile-cookie";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 const Schema = z.object({
   pseudo: z
@@ -22,6 +23,14 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Rate limit anti-spam : 5 changements / minute / IP.
+  // Bloque la création massive de profils anonymes.
+  const rl = rateLimit(`profile-pseudo:${getClientIp(req)}`, {
+    max: 5,
+    windowMs: 60_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl);
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json(
       {

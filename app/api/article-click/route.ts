@@ -5,6 +5,7 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/server";
 import { checkAndUnlockAchievements } from "@/lib/achievements/check";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 /**
  * Incrémente le compteur d'articles cliqués pour le joueur connecté.
@@ -12,8 +13,17 @@ import { checkAndUnlockAchievements } from "@/lib/achievements/check";
  *
  * Fire-and-forget côté client : pas besoin d'attendre la réponse pour
  * ouvrir l'article (le lien continue normalement).
+ *
+ * Rate-limit : 1 clic / 3 sec / IP — empêche un script de farmer "Reporter".
  */
-export async function POST() {
+export async function POST(req: Request) {
+  // Rate limit dès l'IP (avant tout I/O — moins coûteux qu'un check DB).
+  const rl = rateLimit(`article-click:${getClientIp(req)}`, {
+    max: 1,
+    windowMs: 3_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl);
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ ok: false }, { status: 200 });
   }
@@ -28,16 +38,19 @@ export async function POST() {
     const admin = getSupabaseAdmin();
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, article_clicks")
+      .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!profile) return NextResponse.json({ ok: false }, { status: 200 });
 
-    const p = profile as { id: string; article_clicks: number };
-    await admin
-      .from("profiles")
-      .update({ article_clicks: (p.article_clicks ?? 0) + 1 })
-      .eq("id", p.id);
+    const p = profile as { id: string };
+
+    // Incrément atomique via RPC (évite read-modify-write)
+    await admin.rpc("increment_profile_counter", {
+      p_profile_id: p.id,
+      p_column: "article_clicks",
+      p_delta: 1,
+    });
 
     const newAchievements = await checkAndUnlockAchievements(p.id);
     return NextResponse.json({ ok: true, newAchievements });

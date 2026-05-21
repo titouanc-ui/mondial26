@@ -1,31 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Loader2, Trophy, BadgeCheck, Award } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { X, Loader2, Trophy, Award } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { PlayerAchievementBadges } from "@/components/achievements/player-achievement-badges";
-import { getBadge, getBanner } from "@/lib/shop/catalog";
+import { VerifiedPseudo } from "@/components/player/verified-pseudo";
+import { getBanner } from "@/lib/shop/catalog";
 import { getTeam } from "@/lib/teams";
-import { cn } from "@/lib/utils";
+import type { Profile } from "@/lib/supabase/types";
 
 interface Props {
   profileId: string;
   onClose: () => void;
 }
 
-interface PublicProfile {
-  id: string;
-  pseudo: string;
-  is_verified: boolean;
-  bio: string | null;
-  favorite_team: string | null;
-  avatar_url: string | null;
-  equipped_banner: string | null;
-  equipped_frame: string | null;
-  equipped_badge: string | null;
-  equipped_icon: string | null;
-}
+/** Sous-ensemble public d'un Profile (pas de coins, user_id…). */
+type PublicProfile = Pick<
+  Profile,
+  | "id"
+  | "pseudo"
+  | "is_verified"
+  | "bio"
+  | "favorite_team"
+  | "avatar_url"
+  | "equipped_banner"
+  | "equipped_frame"
+  | "equipped_badge"
+  | "equipped_icon"
+>;
 
 interface PlayerStats {
   bestScore: number;
@@ -36,14 +39,54 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const titleId = useId();
 
-  // ESC pour fermer
+  // ESC pour fermer + focus trap : Tab/Shift+Tab restent dans la modale
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Focus initial sur le bouton fermer (élément interactif le plus sûr).
+    closeBtnRef.current?.focus();
+
+    // Bloque le scroll de la page derrière la modale
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      // Liste les éléments focusables dans la modale
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = prevOverflow;
+      // Restaure le focus sur l'élément qui a ouvert la modale (ex: ligne du leaderboard)
+      previouslyFocused?.focus?.();
+    };
   }, [onClose]);
 
   // Fetch profil public + stats
@@ -70,15 +113,19 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
       }
       setProfile(data as PublicProfile);
 
-      const { data: sessions } = await supabase
-        .from("quiz_sessions")
-        .select("score")
-        .eq("profile_id", profileId);
+      // Vue agrégée plutôt que SELECT de toutes les sessions
+      const { data: statsRow } = await supabase
+        .from("profile_stats")
+        .select("best_score, games_played")
+        .eq("profile_id", profileId)
+        .maybeSingle();
       if (cancelled) return;
-      const rows = (sessions ?? []) as { score: number }[];
+      const s = statsRow as
+        | { best_score: number; games_played: number }
+        | null;
       setStats({
-        bestScore: rows.reduce((m, r) => Math.max(m, r.score), 0),
-        gamesPlayed: rows.length,
+        bestScore: s?.best_score ?? 0,
+        gamesPlayed: s?.games_played ?? 0,
       });
     })();
 
@@ -88,9 +135,6 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
   }, [profileId]);
 
   const team = getTeam(profile?.favorite_team);
-  const badge = getBadge(profile?.equipped_badge);
-  const badgeColor = badge?.color ?? "#4a8fff";
-  const badgeGlow = badge?.glowClass ?? "";
   const banner = getBanner(profile?.equipped_banner);
 
   return (
@@ -99,6 +143,10 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="relative w-full max-w-md rounded-2xl border border-border bg-bg-card overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -108,7 +156,7 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
           style={{
             background:
               banner?.gradient ??
-              "linear-gradient(135deg,#0033a0 0%,#141a2e 50%,#c8102e 100%)",
+              "linear-gradient(135deg,#4a8fff 0%,#141a2e 50%,#c8102e 100%)",
           }}
         >
           {banner?.flag && (
@@ -117,10 +165,11 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
             </span>
           )}
           <button
+            ref={closeBtnRef}
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="absolute top-3 right-3 h-8 w-8 inline-flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+            className="absolute top-3 right-3 h-8 w-8 inline-flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60"
           >
             <X className="h-4 w-4" />
           </button>
@@ -148,15 +197,14 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
               </div>
 
               <div className="mt-4 text-center">
-                <div className="flex items-center justify-center gap-1.5">
-                  <h2 className="text-xl font-bold">{profile.pseudo}</h2>
-                  {profile.is_verified && (
-                    <BadgeCheck
-                      className={cn("h-4 w-4 shrink-0", badgeGlow)}
-                      style={{ color: badgeColor }}
-                      strokeWidth={2.2}
-                    />
-                  )}
+                <div id={titleId} className="flex items-center justify-center">
+                  <VerifiedPseudo
+                    pseudo={profile.pseudo}
+                    isVerified={profile.is_verified}
+                    equippedBadge={profile.equipped_badge}
+                    size="md"
+                    pseudoClassName="text-xl font-bold"
+                  />
                 </div>
                 {team && (
                   <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-text-muted">

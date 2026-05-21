@@ -6,16 +6,11 @@ import {
   QUIZ_QUESTION_COUNT,
   QUIZ_TIME_PER_QUESTION_MS,
 } from "@/lib/quiz/scoring";
+import { QUIZ_THEME_IDS } from "@/lib/quiz/themes";
+import type { QuizTheme } from "@/lib/supabase/types";
 
 const StartSchema = z.object({
-  theme: z.enum([
-    "equipes",
-    "joueurs",
-    "historique",
-    "matchs",
-    "culture",
-    "mix",
-  ]),
+  theme: z.enum(QUIZ_THEME_IDS as readonly [QuizTheme, ...QuizTheme[]]),
 });
 
 export async function POST(req: Request) {

@@ -4,7 +4,7 @@ import {
   getSupabaseAdmin,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/server";
-import { ACHIEVEMENTS, type Achievement } from "@/lib/achievements/catalog";
+import { ACHIEVEMENTS } from "@/lib/achievements/catalog";
 import {
   checkAndUnlockAchievements,
   loadAchievementCounters,

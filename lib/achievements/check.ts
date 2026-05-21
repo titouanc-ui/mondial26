@@ -40,66 +40,47 @@ interface ProfileSnapshot {
   bio: string | null;
 }
 
+interface CountersRow extends Counters {
+  favorite_team: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+}
+
 async function loadCounters(
   profileId: string,
 ): Promise<{ counters: Counters; profile: ProfileSnapshot } | null> {
   const admin = getSupabaseAdmin();
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select(
-      "coins, coins_earned_total, points_total, article_clicks, favorite_team, avatar_url, bio",
-    )
-    .eq("id", profileId)
-    .maybeSingle();
-
-  if (!profile) return null;
-  const p = profile as {
-    coins: number;
-    coins_earned_total: number;
-    points_total: number;
-    article_clicks: number;
-    favorite_team: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-  };
-
-  // Sessions agrégées (best_score, games_played)
-  const { data: sessions } = await admin
-    .from("quiz_sessions")
-    .select("score")
-    .eq("profile_id", profileId);
-  const rows = (sessions ?? []) as { score: number }[];
-  const best_score = rows.reduce((m, s) => Math.max(m, s.score), 0);
-  const games_played = rows.length;
-
-  // Inventaire par type
-  const { data: inv } = await admin
-    .from("user_inventory")
-    .select("item_type")
-    .eq("profile_id", profileId);
-  const counts = { frame: 0, badge: 0, banner: 0, icon: 0 };
-  for (const r of (inv ?? []) as { item_type: keyof typeof counts }[]) {
-    counts[r.item_type]++;
+  // Un seul aller-retour SQL via RPC, au lieu de 3 SELECT (profile + sessions + inventory).
+  // Les agrégats (max, count) sont calculés en BDD → reste constant peu importe
+  // le volume d'historique du joueur.
+  const { data, error } = await admin.rpc("get_achievement_counters", {
+    p_profile_id: profileId,
+  });
+  if (error) {
+    console.error("[achievements/check] get_achievement_counters failed", error);
+    return null;
   }
+  const row = (Array.isArray(data) ? data[0] : data) as CountersRow | null;
+  if (!row) return null;
 
   return {
     counters: {
-      best_score,
-      points_total: p.points_total ?? 0,
-      coins: p.coins ?? 0,
-      coins_earned_total: p.coins_earned_total ?? 0,
-      games_played,
-      frames_owned: counts.frame,
-      badges_owned: counts.badge,
-      banners_owned: counts.banner,
-      icons_owned: counts.icon,
-      article_clicks: p.article_clicks ?? 0,
+      best_score: row.best_score ?? 0,
+      points_total: row.points_total ?? 0,
+      coins: row.coins ?? 0,
+      coins_earned_total: row.coins_earned_total ?? 0,
+      games_played: row.games_played ?? 0,
+      frames_owned: row.frames_owned ?? 0,
+      badges_owned: row.badges_owned ?? 0,
+      banners_owned: row.banners_owned ?? 0,
+      icons_owned: row.icons_owned ?? 0,
+      article_clicks: row.article_clicks ?? 0,
     },
     profile: {
-      favorite_team: p.favorite_team,
-      avatar_url: p.avatar_url,
-      bio: p.bio,
+      favorite_team: row.favorite_team,
+      avatar_url: row.avatar_url,
+      bio: row.bio,
     },
   };
 }
@@ -171,10 +152,14 @@ export async function checkAndUnlockAchievements(
 
   if (newly.length === 0) return [];
 
-  // Insert
-  const { error } = await admin.from("user_achievements").insert(
-    newly.map((id) => ({ profile_id: profileId, achievement_id: id })),
-  );
+  // Insert. `upsert` avec ignoreDuplicates protège contre la race où deux
+  // appels concurrents tenteraient d'insérer le même (profile, achievement).
+  const { error } = await admin
+    .from("user_achievements")
+    .upsert(
+      newly.map((id) => ({ profile_id: profileId, achievement_id: id })),
+      { onConflict: "profile_id,achievement_id", ignoreDuplicates: true },
+    );
   if (error) {
     console.error("[achievements/check] insert failed", error);
     return [];

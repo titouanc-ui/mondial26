@@ -11,6 +11,8 @@ import {
   setCurrentProfileId,
 } from "@/lib/quiz/profile-cookie";
 import { checkAndUnlockAchievements } from "@/lib/achievements/check";
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
+import { QUIZ_TIME_PER_QUESTION_MS } from "@/lib/quiz/scoring";
 
 const SubmitSchema = z.object({
   sessionToken: z.string(),
@@ -35,6 +37,14 @@ const SubmitSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Rate limit anti-spam : 3 submits / 30 sec / IP.
+  // Empêche de farmer le leaderboard avec un script.
+  const rl = rateLimit(`quiz-submit:${getClientIp(req)}`, {
+    max: 3,
+    windowMs: 30_000,
+  });
+  if (!rl.ok) return tooManyRequests(rl);
+
   let body: unknown;
   try {
     body = await req.json();
@@ -57,6 +67,26 @@ export async function POST(req: Request) {
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Token invalide" },
+      { status: 400 },
+    );
+  }
+
+  // Sanity check : durée plausible. Lire+répondre une question prend au
+  // minimum ~1 sec — sous ce seuil c'est forcément un bot.
+  const minPlausibleMs = snapshot.questions.length * 1_000;
+  if (parsed.data.durationMs < minPlausibleMs) {
+    return NextResponse.json(
+      { error: "Soumission trop rapide pour être plausible." },
+      { status: 400 },
+    );
+  }
+  // Garde-fou max : on accepte au plus 2× le temps total alloué
+  // (le timer client garantit déjà ça, mais on borne aussi côté serveur).
+  const maxPlausibleMs =
+    snapshot.questions.length * QUIZ_TIME_PER_QUESTION_MS * 2;
+  if (parsed.data.durationMs > maxPlausibleMs) {
+    return NextResponse.json(
+      { error: "Session expirée." },
       { status: 400 },
     );
   }
@@ -106,34 +136,27 @@ export async function POST(req: Request) {
       if (sessionErr) throw sessionErr;
       savedProfileId = profileId;
 
-      // MAJ du profil :
+      // MAJ du profil — atomique via RPC pour éviter les race conditions
+      // (deux quiz soumis quasi simultanément ne s'écrasent plus l'un l'autre).
       // - Crédit de Buts : 10 par bonne réponse + bonus 50 si parfait (max 150)
       // - Score cumulé : on ajoute le score de la partie au total lifetime
       const coinsEarned =
         result.correctCount * 10 + (result.correctCount === snapshot.questions.length ? 50 : 0);
 
-      const { data: profileRow } = await admin
-        .from("profiles")
-        .select("coins, coins_earned_total, points_total")
-        .eq("id", profileId)
-        .single();
-      const current = profileRow as {
-        coins: number;
-        coins_earned_total: number;
-        points_total: number;
-      } | null;
-      const newCoins = (current?.coins ?? 0) + coinsEarned;
-      const newPoints = (current?.points_total ?? 0) + result.totalScore;
-      const newEarnedTotal = (current?.coins_earned_total ?? 0) + coinsEarned;
-
-      await admin
-        .from("profiles")
-        .update({
-          coins: newCoins,
-          points_total: newPoints,
-          coins_earned_total: newEarnedTotal,
-        })
-        .eq("id", profileId);
+      const { data: creditRow, error: creditErr } = await admin.rpc(
+        "credit_coins",
+        {
+          p_profile_id: profileId,
+          p_coins_delta: coinsEarned,
+          p_points_delta: result.totalScore,
+          p_earned_delta: coinsEarned,
+        },
+      );
+      if (creditErr) throw creditErr;
+      const credit = Array.isArray(creditRow) ? creditRow[0] : creditRow;
+      const newCoins = (credit as { coins: number } | null)?.coins ?? 0;
+      const newPoints =
+        (credit as { points_total: number } | null)?.points_total ?? 0;
 
       // Check des succès (best_score, cumul, somnambule, lève-tôt, etc.)
       const newAchievements = await checkAndUnlockAchievements(profileId, {

@@ -1,14 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef } from "react";
-import {
-  BadgeCheck,
-  Check,
-  Coins,
-  Loader2,
-  Lock,
-  Sparkles,
-} from "lucide-react";
+import { BadgeCheck, Check, Coins, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   RARITY_STYLE,
