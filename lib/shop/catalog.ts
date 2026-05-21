@@ -154,7 +154,7 @@ export const BADGES: BadgeItem[] = [
     price: 0,
     rarity: "common",
     tier: "bronze",
-    color: "#0033a0",
+    color: "#4a8fff",
   },
   {
     id: "badge-bronze",

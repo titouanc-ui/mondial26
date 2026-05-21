@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, Coins, Gamepad2, Star, AlertCircle, Store } from "lucide-react";
+import { Trophy, Coins, Gamepad2, Star, AlertCircle, Store, Award } from "lucide-react";
 import {
   getSupabaseServer,
   getSupabaseAdmin,
@@ -9,6 +9,7 @@ import {
 import { GoogleSignInButton } from "@/components/auth/google-button";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { PlayerAchievementBadges } from "@/components/achievements/player-achievement-badges";
 import { TEAMS } from "@/lib/teams";
 import { getBanner } from "@/lib/shop/catalog";
 import type { Profile } from "@/lib/supabase/types";
@@ -298,6 +299,27 @@ export default async function ProfilePage() {
             >
               Voir le classement →
             </Link>
+          </div>
+
+          {/* Succès débloqués */}
+          <div className="rounded-2xl border border-border bg-bg-card/40 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Award className="h-4 w-4 text-accent-gold" />
+                Mes succès
+              </h3>
+              <Link
+                href="/quiz/succes"
+                className="text-xs text-accent-blue hover:underline"
+              >
+                Tout voir →
+              </Link>
+            </div>
+            <PlayerAchievementBadges
+              profileId={safeProfile.id}
+              maxVisible={12}
+              compact
+            />
           </div>
 
           <div className="rounded-2xl border border-border bg-bg-card/40 p-4">

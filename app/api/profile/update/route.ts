@@ -6,6 +6,7 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/server";
 import { TEAMS_BY_CODE } from "@/lib/teams";
+import { checkAndUnlockAchievements } from "@/lib/achievements/check";
 
 const Schema = z.object({
   pseudo: z
@@ -108,5 +109,10 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  // Check des succès (Tricolore, Photogénique, Biographe)
+  const newAchievements = await checkAndUnlockAchievements(
+    (profile as { id: string }).id,
+  );
+
+  return NextResponse.json({ ok: true, newAchievements });
 }

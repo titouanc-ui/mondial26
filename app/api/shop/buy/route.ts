@@ -6,6 +6,7 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/server";
 import { getItem, getMissingPredecessors, ITEMS_BY_ID } from "@/lib/shop/catalog";
+import { checkAndUnlockAchievements } from "@/lib/achievements/check";
 
 const Schema = z.object({
   itemId: z.string().min(1).max(60),
@@ -143,9 +144,13 @@ export async function POST(req: Request) {
     );
   }
 
+  // Check des succès (Collectionneur*, Riche, etc.)
+  const newAchievements = await checkAndUnlockAchievements(profile.id);
+
   return NextResponse.json({
     ok: true,
     item_id: item.id,
     coins: newCoins,
+    newAchievements,
   });
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import type { Article } from "@/lib/news/types";
 import { formatRelativeTime } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -7,6 +9,16 @@ interface ArticleCardProps {
   featured?: boolean;
 }
 
+// Fire-and-forget : ping le serveur pour incrémenter article_clicks
+// (utilisé pour le succès Reporter). On n'attend pas la réponse, le lien
+// s'ouvre normalement dans le nouvel onglet.
+function trackArticleClick() {
+  if (typeof window === "undefined") return;
+  fetch("/api/article-click", { method: "POST", keepalive: true }).catch(
+    () => null,
+  );
+}
+
 export function ArticleCard({ article, featured }: ArticleCardProps) {
   if (featured) {
     return (
@@ -14,6 +26,7 @@ export function ArticleCard({ article, featured }: ArticleCardProps) {
         href={article.link}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={trackArticleClick}
         className="group relative block overflow-hidden rounded-2xl border border-border bg-bg-card hover:border-border-strong transition-all"
       >
         {article.imageUrl ? (
@@ -50,6 +63,7 @@ export function ArticleCard({ article, featured }: ArticleCardProps) {
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={trackArticleClick}
       className="group flex gap-4 rounded-xl border border-border bg-bg-card/60 p-4 hover:border-border-strong hover:bg-bg-card transition-all"
     >
       {article.imageUrl && (

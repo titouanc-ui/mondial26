@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Trophy, BadgeCheck } from "lucide-react";
+import { X, Loader2, Trophy, BadgeCheck, Award } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { PlayerAchievementBadges } from "@/components/achievements/player-achievement-badges";
 import { getBadge, getBanner } from "@/lib/shop/catalog";
 import { getTeam } from "@/lib/teams";
 import { cn } from "@/lib/utils";
@@ -88,7 +89,7 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
 
   const team = getTeam(profile?.favorite_team);
   const badge = getBadge(profile?.equipped_badge);
-  const badgeColor = badge?.color ?? "#0033a0";
+  const badgeColor = badge?.color ?? "#4a8fff";
   const badgeGlow = badge?.glowClass ?? "";
   const banner = getBanner(profile?.equipped_banner);
 
@@ -192,6 +193,19 @@ export function PlayerProfileModal({ profileId, onClose }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Succès débloqués */}
+              <div className="mt-6">
+                <h3 className="text-xs uppercase tracking-wider text-text-dim mb-2 flex items-center gap-1">
+                  <Award className="h-3 w-3" />
+                  Succès
+                </h3>
+                <PlayerAchievementBadges
+                  profileId={profile.id}
+                  maxVisible={12}
+                  compact
+                />
+              </div>
             </>
           )}
         </div>

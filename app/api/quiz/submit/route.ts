@@ -10,6 +10,7 @@ import {
   getCurrentProfileId,
   setCurrentProfileId,
 } from "@/lib/quiz/profile-cookie";
+import { checkAndUnlockAchievements } from "@/lib/achievements/check";
 
 const SubmitSchema = z.object({
   sessionToken: z.string(),
@@ -113,17 +114,31 @@ export async function POST(req: Request) {
 
       const { data: profileRow } = await admin
         .from("profiles")
-        .select("coins, points_total")
+        .select("coins, coins_earned_total, points_total")
         .eq("id", profileId)
         .single();
-      const current = profileRow as { coins: number; points_total: number } | null;
+      const current = profileRow as {
+        coins: number;
+        coins_earned_total: number;
+        points_total: number;
+      } | null;
       const newCoins = (current?.coins ?? 0) + coinsEarned;
       const newPoints = (current?.points_total ?? 0) + result.totalScore;
+      const newEarnedTotal = (current?.coins_earned_total ?? 0) + coinsEarned;
 
       await admin
         .from("profiles")
-        .update({ coins: newCoins, points_total: newPoints })
+        .update({
+          coins: newCoins,
+          points_total: newPoints,
+          coins_earned_total: newEarnedTotal,
+        })
         .eq("id", profileId);
+
+      // Check des succès (best_score, cumul, somnambule, lève-tôt, etc.)
+      const newAchievements = await checkAndUnlockAchievements(profileId, {
+        quizJustPlayed: true,
+      });
 
       return NextResponse.json({
         score: result.totalScore,
@@ -134,6 +149,7 @@ export async function POST(req: Request) {
         coinsEarned,
         coinsTotal: newCoins,
         pointsTotal: newPoints,
+        newAchievements,
       });
     } catch (err) {
       console.error("[quiz/submit] persistence failed:", err);

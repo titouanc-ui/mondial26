@@ -93,7 +93,7 @@ export function RecentSessionsLive({
         <ul className="divide-y divide-border/60">
           {entries.map((e) => {
             const badge = getBadge(e.equipped_badge);
-            const badgeColor = badge?.color ?? "#0033a0";
+            const badgeColor = badge?.color ?? "#4a8fff";
             const badgeGlow = badge?.glowClass ?? "";
             const team = getTeam(e.favorite_team);
             return (

@@ -90,15 +90,23 @@ export async function POST(req: Request) {
     }
   }
 
+  const profileId = (profile as { id: string }).id;
+
   const { error: updErr } = await admin
     .from("profiles")
     .update({ avatar_url: avatarUrl })
-    .eq("id", (profile as { id: string }).id);
+    .eq("id", profileId);
 
   if (updErr) {
     console.error("[profile/avatar] update", updErr);
     return NextResponse.json({ error: updErr.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, avatar_url: avatarUrl });
+  // Check succès Photogénique
+  const { checkAndUnlockAchievements } = await import(
+    "@/lib/achievements/check"
+  );
+  const newAchievements = await checkAndUnlockAchievements(profileId);
+
+  return NextResponse.json({ ok: true, avatar_url: avatarUrl, newAchievements });
 }

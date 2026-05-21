@@ -113,7 +113,7 @@ export function LeaderboardTable() {
             const rank = i + 1;
             const deco = RANK_DECORATION(rank);
             const badge = getBadge(e.equipped_badge);
-            const badgeColor = badge?.color ?? "#0033a0";
+            const badgeColor = badge?.color ?? "#4a8fff";
             const badgeGlow = badge?.glowClass ?? "";
             const team = getTeam(e.favorite_team);
             return (

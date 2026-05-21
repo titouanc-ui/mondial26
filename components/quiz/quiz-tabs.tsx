@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gamepad2, Trophy } from "lucide-react";
+import { Gamepad2, Trophy, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 const TABS = [
   { href: "/quiz", label: "Jouer", icon: Gamepad2 },
   { href: "/classement-joueurs", label: "Top joueurs", icon: Trophy },
+  { href: "/quiz/succes", label: "Succès", icon: Award },
 ];
 
 export function QuizTabs({ className }: Props) {
