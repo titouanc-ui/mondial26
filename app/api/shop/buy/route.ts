@@ -5,7 +5,7 @@ import {
   getSupabaseAdmin,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/server";
-import { getItem } from "@/lib/shop/catalog";
+import { getItem, getMissingPredecessors, ITEMS_BY_ID } from "@/lib/shop/catalog";
 
 const Schema = z.object({
   itemId: z.string().min(1).max(60),
@@ -77,6 +77,29 @@ export async function POST(req: Request) {
       { error: "Tu possèdes déjà cet objet." },
       { status: 409 },
     );
+  }
+
+  // Progression séquentielle : pour les cadres et les badges, il faut posséder
+  // tous les paliers précédents avant de pouvoir acheter celui-ci.
+  if (item.type === "frame" || item.type === "badge") {
+    const { data: allOwned } = await admin
+      .from("user_inventory")
+      .select("item_id")
+      .eq("profile_id", profile.id);
+    const ownedSet = new Set(
+      (allOwned ?? []).map((r) => (r as { item_id: string }).item_id),
+    );
+    const missing = getMissingPredecessors(item.id, ownedSet);
+    if (missing.length > 0) {
+      const blocker = ITEMS_BY_ID[missing[0]];
+      return NextResponse.json(
+        {
+          error: `Tu dois d'abord débloquer "${blocker?.name ?? missing[0]}".`,
+          missing,
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Fonds suffisants ?

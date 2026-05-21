@@ -314,3 +314,60 @@ export const RARITY_STYLE: Record<Rarity, { label: string; className: string }> 
     epic: { label: "Épique", className: "text-purple-400" },
     legendary: { label: "Légendaire", className: "text-accent-gold" },
   };
+
+// ============================================================
+// PROGRESSIONS — paliers séquentiels (chaque palier débloque le suivant)
+// L'item "default" (gratuit) n'est pas dans la séquence.
+// ============================================================
+export const FRAME_PROGRESSION: string[] = [
+  "frame-bois",
+  "frame-pierre",
+  "frame-fer",
+  "frame-bronze",
+  "frame-argent",
+  "frame-or",
+  "frame-platine",
+];
+
+export const BADGE_PROGRESSION: string[] = [
+  "badge-bronze",
+  "badge-argent",
+  "badge-or",
+  "badge-platine",
+];
+
+const PROGRESSIONS_BY_TYPE: Partial<Record<ItemType, string[]>> = {
+  frame: FRAME_PROGRESSION,
+  badge: BADGE_PROGRESSION,
+};
+
+/**
+ * Renvoie l'id du palier qu'il faut posséder avant d'acheter `itemId`.
+ * `null` si c'est le 1er palier, ou si l'item n'est pas dans une progression.
+ */
+export function getRequiredPredecessor(itemId: string): string | null {
+  for (const seq of Object.values(PROGRESSIONS_BY_TYPE)) {
+    if (!seq) continue;
+    const idx = seq.indexOf(itemId);
+    if (idx > 0) return seq[idx - 1];
+    if (idx === 0) return null;
+  }
+  return null;
+}
+
+/**
+ * Liste les paliers manquants à acheter avant `itemId` (progression complète requise).
+ * Renvoie [] si tout est OK ou si l'item n'est pas dans une progression.
+ */
+export function getMissingPredecessors(
+  itemId: string,
+  ownedIds: ReadonlySet<string> | Set<string>,
+): string[] {
+  for (const seq of Object.values(PROGRESSIONS_BY_TYPE)) {
+    if (!seq) continue;
+    const idx = seq.indexOf(itemId);
+    if (idx === -1) continue;
+    return seq.slice(0, idx).filter((id) => !ownedIds.has(id));
+  }
+  return [];
+}

@@ -21,6 +21,7 @@ import {
   type ShopItem,
   type ItemType,
 } from "@/lib/shop/catalog";
+import { TrophyRoad } from "@/components/shop/trophy-road";
 
 interface Props {
   coins: number;
@@ -174,13 +175,50 @@ export function ShopGrid({
         </div>
       )}
 
-      {/* Grille */}
+      {/* Vue selon l'onglet : cadres/badges = route progressive, sinon grille */}
       {items.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-border bg-bg-card/40 p-10 text-center text-text-muted">
           <Sparkles className="h-8 w-8 mx-auto text-text-dim" />
           <p className="mt-3 text-sm">
             Cette catégorie sera bientôt disponible.
           </p>
+        </div>
+      ) : activeTab === "frame" ? (
+        <div className="mt-6">
+          <p className="mb-3 text-xs text-text-muted">
+            Débloque les paliers <strong>dans l'ordre</strong>. Le palier
+            suivant n'est accessible qu'après l'achat du précédent.
+          </p>
+          <TrophyRoad
+            items={catalog.frames.filter((f) => f.id !== "frame-default")}
+            ownedIds={owned}
+            equippedId={equipped.frame}
+            coins={coins}
+            busyId={busyId}
+            onBuy={(it) => handleBuy(it)}
+            onEquip={(it) => handleEquip(it)}
+          />
+        </div>
+      ) : activeTab === "badge" ? (
+        <div className="mt-6">
+          {!isVerified && (
+            <div className="mb-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              Les badges sont réservés aux comptes vérifiés (Google).
+            </div>
+          )}
+          <p className="mb-3 text-xs text-text-muted">
+            Débloque les paliers <strong>dans l'ordre</strong>. Le palier
+            suivant n'est accessible qu'après l'achat du précédent.
+          </p>
+          <TrophyRoad
+            items={catalog.badges.filter((b) => b.id !== "badge-default")}
+            ownedIds={owned}
+            equippedId={equipped.badge}
+            coins={coins}
+            busyId={busyId}
+            onBuy={(it) => handleBuy(it)}
+            onEquip={(it) => handleEquip(it)}
+          />
         </div>
       ) : (
         <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
