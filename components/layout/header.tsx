@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import { Menu, X, Trophy, User, Coins, Store } from "lucide-react";
+import { Menu, X, Trophy, User, Coins, Store, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
@@ -133,9 +133,11 @@ export function Header() {
           })}
         </nav>
 
-        {/* Cluster droit : Buts + Boutique + Profil (visible si authentifié) */}
+        {/* Cluster droit : Buts + Boutique + Profil (si authentifié)
+            OU bouton "Se connecter" (si anonyme — sans quoi il n'y a aucune
+            porte d'entrée vers /profil pour un nouveau visiteur). */}
         <div className="flex items-center gap-2">
-          {authed && profile && (
+          {authed && profile ? (
             <>
               {/* Solde de Buts */}
               <Link
@@ -187,6 +189,20 @@ export function Header() {
                 <span className="hidden sm:inline">Profil</span>
               </Link>
             </>
+          ) : (
+            // Visiteur anonyme : CTA "Se connecter" qui pointe vers /profil
+            // (la page /profil affiche le bouton Google quand non-authentifié)
+            <Link
+              href="/profil"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full bg-accent-red hover:bg-accent-red-hover px-3 sm:px-4 h-9 text-sm font-semibold text-white transition-colors",
+                pathname.startsWith("/profil") && "bg-accent-red-hover",
+              )}
+              aria-label="Se connecter"
+            >
+              <LogIn className="h-4 w-4" />
+              <span className="hidden sm:inline">Se connecter</span>
+            </Link>
           )}
 
           {/* Bouton mobile menu (toujours visible en md-) */}
@@ -227,7 +243,7 @@ export function Header() {
                 </Link>
               );
             })}
-            {authed && (
+            {authed ? (
               <>
                 <Link
                   href="/boutique"
@@ -259,6 +275,14 @@ export function Header() {
                   <User className="h-4 w-4" /> Mon profil
                 </Link>
               </>
+            ) : (
+              <Link
+                href="/profil"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-md bg-accent-red px-3 py-2.5 text-sm font-semibold text-white hover:bg-accent-red-hover transition-colors"
+              >
+                <LogIn className="h-4 w-4" /> Se connecter avec Google
+              </Link>
             )}
           </div>
         </nav>
